@@ -6,7 +6,6 @@ import { translations } from './translations';
 const PERSISTENCE_KEY = 'mahadbt_assist_state_v3';
 
 const App: React.FC = () => {
-  // Persistence: Initialize state from localStorage or defaults
   const [state, setState] = useState<AppState>(() => {
     const saved = localStorage.getItem(PERSISTENCE_KEY);
     if (saved) {
@@ -25,20 +24,14 @@ const App: React.FC = () => {
       currentYear: null,
       isHosteller: false,
       hadGap: false,
-      loginReady: {
-        username: false,
-        password: false,
-        mobile: false,
-      },
+      loginReady: { username: false, password: false, mobile: false },
     };
   });
 
-  // Persistence: Save state on every change
   useEffect(() => {
     localStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state));
   }, [state]);
 
-  // Sync HTML lang attribute for CSS targeting
   useEffect(() => {
     document.documentElement.lang = state.language;
   }, [state.language]);
@@ -46,46 +39,44 @@ const App: React.FC = () => {
   const [activeVideo, setActiveVideo] = useState<{ title: string; desc: string; url?: string } | null>(null);
 
   const t = translations[state.language];
-
   const isRenewal = useMemo(() => state.currentYear !== null && state.currentYear > 1, [state.currentYear]);
   
   const handleStreamSelect = (s: Stream) => {
-    setState(prev => ({
-      ...prev,
-      stream: s,
-      courseType: null,
-      currentYear: null,
+    const nextStepNum = (s === Stream.Pharmacy || s === Stream.Management || s === Stream.ASC) ? 2 : 3;
+    setState(prev => ({ 
+      ...prev, 
+      stream: s, 
+      courseType: null, 
+      currentYear: null, 
       category: null,
+      step: nextStepNum
     }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCourseSelect = (c: CourseType) => {
-    setState(prev => ({
-      ...prev,
-      courseType: c,
-      currentYear: null,
+    setState(prev => ({ 
+      ...prev, 
+      courseType: c, 
+      currentYear: null, 
       category: null,
+      step: 3
     }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCategorySelect = (cat: Category) => {
-    setState(prev => ({
-      ...prev,
-      category: cat,
+    setState(prev => ({ 
+      ...prev, 
+      category: cat, 
       isHosteller: false,
+      step: 4
     }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const nextStep = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (state.step === 1) {
-      if (state.stream === Stream.Pharmacy || state.stream === Stream.Management || state.stream === Stream.ASC) {
-        setState(prev => ({ ...prev, step: 2 }));
-      } else {
-        setState(prev => ({ ...prev, step: 3, courseType: null }));
-      }
-      return;
-    }
     if (state.step === 4) {
       if (isRenewal) setState(prev => ({ ...prev, step: 5 }));
       else setState(prev => ({ ...prev, step: 6 }));
@@ -125,79 +116,90 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-10 flex flex-col pt-safe pb-safe scroll-container">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col selection:bg-blue-100">
       {/* Video Overlay */}
       {activeVideo && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-sm rounded-xl overflow-hidden shadow-2xl relative border border-slate-200">
-            <button onClick={() => setActiveVideo(null)} className="absolute top-4 right-4 z-10 bg-white/80 p-2 rounded-full shadow-lg">
-              <svg className="w-5 h-5 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+        <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-6" onClick={() => setActiveVideo(null)}>
+          <div className="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl relative border border-slate-200" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setActiveVideo(null)} className="absolute top-4 right-4 z-10 bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition-colors">
+              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <div className="aspect-[9/16] bg-slate-900 flex flex-col items-center justify-center p-8 text-center text-white">
-              <h3 className="text-xl font-black mb-4">{activeVideo.title}</h3>
-              <p className="text-sm opacity-80 mb-8 italic">"{activeVideo.desc}"</p>
+            <div className="aspect-[9/16] bg-slate-900 flex flex-col items-center justify-center p-10 text-center text-white">
+              <h3 className="text-xl font-black mb-4 tracking-tight">{activeVideo.title}</h3>
+              <p className="text-sm opacity-60 mb-8 italic">{activeVideo.desc}</p>
               {activeVideo.url && (
-                <a href={activeVideo.url} target="_blank" rel="noopener noreferrer" className="bg-white text-blue-900 px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest">Open Tutorial</a>
+                <a href={activeVideo.url} target="_blank" rel="noopener noreferrer" className="bg-white text-blue-900 px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-colors">Open Tutorial</a>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Header */}
-      <header className="bg-blue-900 text-white pt-8 pb-20 px-6 sticky top-0 z-10 pt-safe no-select">
+      {/* Header - Reduced height and added rounded bottom */}
+      <header className="bg-[#1e3a8a] text-white pt-8 pb-12 px-6 sticky top-0 z-40 pt-safe no-select shadow-xl shadow-blue-900/5 rounded-b-[2.5rem]">
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
-              <h1 className="font-black text-xl tracking-tight leading-none uppercase">Pathrikar Campus</h1>
-              <p className="text-[10px] text-blue-300 uppercase tracking-widest mt-2 font-bold">{t.subtitle}</p>
+              <h1 className="font-black text-xl tracking-tighter leading-none uppercase">Pathrikar Campus</h1>
+              <p className="text-[10px] text-blue-300 uppercase tracking-[0.2em] mt-1.5 font-bold opacity-80">{t.subtitle}</p>
             </div>
-            <div className="flex bg-blue-950/50 p-1.5 rounded-xl backdrop-blur-md">
+            <div className="flex bg-blue-950/40 p-1 rounded-xl backdrop-blur-md border border-white/5">
               {(['en', 'hi', 'mr'] as Language[]).map(lang => (
-                <button key={lang} onClick={() => setState(prev => ({ ...prev, language: lang }))} className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all ${state.language === lang ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-400'}`}>
+                <button 
+                  key={lang} 
+                  onClick={() => setState(prev => ({ ...prev, language: lang }))} 
+                  className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all duration-300 ${state.language === lang ? 'bg-white text-blue-900 shadow-md' : 'text-blue-200/60 hover:text-white'}`}
+                >
                   {lang === 'en' ? 'EN' : lang === 'hi' ? 'हिं' : 'मराठी'}
                 </button>
               ))}
             </div>
           </div>
           <div className="space-y-3">
-            <div className="flex justify-end"><span className="text-[10px] font-black text-blue-200 uppercase tracking-widest">{t.step} {state.step} {t.of} 6</span></div>
-            <div className="flex space-x-1.5 w-full">
-              {[1, 2, 3, 4, 5, 6].map(i => (<div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${state.step >= i ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'bg-blue-800'}`} />))}
+            <div className="flex justify-between items-end">
+               <span className="text-[10px] font-black text-blue-200/60 uppercase tracking-widest">{t.step} {state.step} / 6</span>
+               <div className="flex space-x-1">
+                  {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className={`h-1 rounded-full transition-all duration-500 ${state.step >= i ? 'w-4 bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'w-1 bg-blue-800'}`} />
+                  ))}
+               </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Card Container */}
-      <main className="max-w-2xl mx-auto relative z-20 flex-grow w-full -mt-12 px-0 sm:px-4">
-        <div className="bg-white rounded-t-[2.5rem] shadow-2xl min-h-[500px] p-6 sm:rounded-3xl border-t border-white/20">
+      {/* Main Content - Adjusted margin to avoid overlap and match rounded design */}
+      <main className="max-w-2xl mx-auto relative z-30 flex-grow w-full mt-4 px-0 sm:px-4">
+        <div className="bg-white min-h-[500px] p-6 rounded-3xl border border-slate-100 overflow-hidden pb-12 shadow-sm">
           {state.step > 1 && (
-            <button onClick={prevStep} className="mb-8 flex items-center space-x-2 text-slate-400 hover:text-blue-600 font-bold text-[10px] uppercase tracking-widest transition-all touch-manipulation">
-              <div className="p-1.5 bg-slate-50 rounded-lg"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg></div>
-              <span>{t.back}</span>
+            <button onClick={prevStep} className="mb-6 flex items-center space-x-2 text-slate-400 hover:text-blue-600 font-bold text-[10px] uppercase tracking-widest transition-all touch-manipulation group">
+              <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-blue-50 transition-colors">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </div>
+              <span className="group-hover:translate-x-0.5 transition-transform">{t.back}</span>
             </button>
           )}
 
-          {state.step === 1 && <StepStream selected={state.stream} onSelect={handleStreamSelect} onContinue={nextStep} t={t} />}
-          {state.step === 2 && <StepCourse selected={state.courseType} stream={state.stream} onSelect={handleCourseSelect} onContinue={nextStep} t={t} />}
-          {state.step === 3 && <StepCategory selected={state.category} onSelect={handleCategorySelect} onContinue={nextStep} t={t} />}
-          {state.step === 4 && <StepYear state={state} onUpdate={updates => setState(prev => ({ ...prev, ...updates }))} onContinue={nextStep} t={t} />}
-          {state.step === 5 && <StepLoginCheck ready={state.loginReady} onToggle={field => setState(prev => ({ ...prev, loginReady: { ...prev.loginReady, [field]: !prev.loginReady[field] } }))} onContinue={nextStep} t={t} />}
-          {state.step === 6 && <StepDocumentList state={state} onRestart={handleRestart} onBack={prevStep} onOpenVideo={(title, desc, url) => setActiveVideo({ title, desc, url })} t={t} />}
+          <div className="step-enter">
+            {state.step === 1 && <StepStream selected={state.stream} onSelect={handleStreamSelect} t={t} />}
+            {state.step === 2 && <StepCourse selected={state.courseType} stream={state.stream} onSelect={handleCourseSelect} t={t} />}
+            {state.step === 3 && <StepCategory selected={state.category} onSelect={handleCategorySelect} t={t} />}
+            {state.step === 4 && <StepYear state={state} onUpdate={updates => setState(prev => ({ ...prev, ...updates }))} onContinue={nextStep} t={t} />}
+            {state.step === 5 && <StepLoginCheck ready={state.loginReady} onToggle={field => setState(prev => ({ ...prev, loginReady: { ...prev.loginReady, [field]: !prev.loginReady[field] } }))} onContinue={nextStep} t={t} />}
+            {state.step === 6 && <StepDocumentList state={state} onRestart={handleRestart} onBack={prevStep} onOpenVideo={(title, desc, url) => setActiveVideo({ title, desc, url })} t={t} />}
+          </div>
         </div>
       </main>
 
-      <footer className="w-full py-8 mt-auto flex flex-col items-center bg-white border-t border-slate-100">
-        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mb-2 opacity-60">{t.footerText}</p>
-        <a href="https://www.instagram.com/sohellsd/" target="_blank" rel="noopener noreferrer" className="text-blue-700 font-black text-xs tracking-tight uppercase">Sohel Sayyad</a>
+      <footer className="w-full py-10 flex flex-col items-center bg-transparent pb-safe no-select">
+        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mb-3 opacity-50">{t.footerText}</p>
+        <a href="https://www.instagram.com/sohellsd/" target="_blank" rel="noopener noreferrer" className="text-blue-800 font-black text-xs tracking-tight uppercase hover:text-blue-600 transition-colors">Sohel Sayyad</a>
       </footer>
     </div>
   );
 };
 
-// Selection Step Components
-const StepStream: React.FC<{ selected: Stream | null; onSelect: (s: Stream) => void; onContinue: () => void; t: any; }> = ({ selected, onSelect, onContinue, t }) => {
+const StepStream: React.FC<{ selected: Stream | null; onSelect: (s: Stream) => void; t: any; }> = ({ selected, onSelect, t }) => {
   const streams = [
     { value: Stream.Engineering, label: t.engLabel, tip: t.engTip },
     { value: Stream.Pharmacy, label: t.pharmLabel, tip: t.pharmTip },
@@ -206,52 +208,53 @@ const StepStream: React.FC<{ selected: Stream | null; onSelect: (s: Stream) => v
     { value: Stream.ASC, label: t.ascLabel, tip: t.ascTip },
   ];
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-      <header className="space-y-2"><h2 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{t.selectStream}</h2><p className="text-slate-500 font-medium text-sm leading-relaxed">{t.selectStreamSub}</p></header>
+    <div className="space-y-8">
+      <header className="space-y-2">
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{t.selectStream}</h2>
+        <p className="text-slate-500 font-medium text-sm leading-relaxed">{t.selectStreamSub}</p>
+      </header>
       <div className="space-y-3">
         {streams.map(s => (
-          <button key={s.value} onClick={() => onSelect(s.value)} className={`group w-full flex items-center p-5 rounded-2xl border-2 transition-all active:scale-[0.98] text-left relative ${selected === s.value ? 'border-blue-600 bg-blue-50/50 shadow-sm' : 'border-slate-100 bg-white hover:border-slate-200'}`}>
-            <div className={`p-4 rounded-xl transition-all shadow-sm ${selected === s.value ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400'}`}>{StreamIcons[s.value as keyof typeof StreamIcons]}</div>
-            <div className="ml-5 flex-grow"><span className={`font-black text-base tracking-tight block ${selected === s.value ? 'text-blue-900' : 'text-slate-800'}`}>{s.label}</span><span className="text-xs font-bold text-slate-400 mt-1">{s.tip}</span></div>
-            {selected === s.value && <div className="absolute right-5 text-blue-600"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg></div>}
+          <button key={s.value} onClick={() => onSelect(s.value)} className={`w-full flex items-center p-4 rounded-2xl border-2 transition-all active:scale-[0.98] text-left relative ${selected === s.value ? 'border-blue-600 bg-blue-50/30' : 'border-slate-50 bg-[#fafafa] hover:border-slate-200'}`}>
+            <div className={`p-3.5 rounded-xl transition-all ${selected === s.value ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-300'}`}>{StreamIcons[s.value as keyof typeof StreamIcons]}</div>
+            <div className="ml-4 flex-grow"><span className={`font-black text-[15px] tracking-tight block ${selected === s.value ? 'text-blue-900' : 'text-slate-700'}`}>{s.label}</span><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{s.tip}</span></div>
           </button>
         ))}
       </div>
-      <button disabled={!selected} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/20 active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-xs disabled:opacity-20 mt-4">{t.continue}</button>
     </div>
   );
 };
 
-const StepCourse: React.FC<{ selected: CourseType | null; stream: Stream | null; onSelect: (c: CourseType) => void; onContinue: () => void; t: any; }> = ({ selected, stream, onSelect, onContinue, t }) => {
+const StepCourse: React.FC<{ selected: CourseType | null; stream: Stream | null; onSelect: (c: CourseType) => void; t: any; }> = ({ selected, stream, onSelect, t }) => {
   let options: CourseType[] = [];
   if (stream === Stream.Pharmacy) options = [CourseType.BPharm, CourseType.DPharm, CourseType.MPharm];
   else if (stream === Stream.Management) options = [CourseType.BBA, CourseType.BCA, CourseType.MBA, CourseType.MCA];
   else if (stream === Stream.ASC) options = [CourseType.BA, CourseType.BSc, CourseType.BCom, CourseType.MA, CourseType.MSc, CourseType.MCom];
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8">
       <header className="space-y-2"><h2 className="text-2xl font-black text-slate-900 tracking-tight">{t.selectCourse}</h2><p className="text-slate-500 font-medium text-sm leading-relaxed">{t.selectCourseSub}</p></header>
       <div className="space-y-3 no-select">{options.map(c => (
-          <button key={c} onClick={() => onSelect(c)} className={`w-full flex items-center p-6 rounded-2xl border-2 transition-all active:scale-[0.98] text-left ${selected === c ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 bg-white'}`}>
-            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === c ? 'bg-blue-600 border-blue-600 shadow-lg' : 'border-slate-200'}`}> {selected === c && <div className="w-2.5 h-2.5 bg-white rounded-full" />}</div>
-            <div className="ml-5"><span className={`font-black text-base ${selected === c ? 'text-blue-900' : 'text-slate-800'}`}>{c}</span></div>
+          <button key={c} onClick={() => onSelect(c)} className={`w-full flex items-center p-5 rounded-2xl border-2 transition-all active:scale-[0.98] text-left ${selected === c ? 'border-blue-600 bg-blue-50/30' : 'border-slate-50 bg-[#fafafa]'}`}>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === c ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-200' : 'border-slate-200 bg-white'}`}> {selected === c && <div className="w-2 h-2 bg-white rounded-full" />}</div>
+            <div className="ml-4"><span className={`font-black text-sm uppercase tracking-tight ${selected === c ? 'text-blue-900' : 'text-slate-700'}`}>{c}</span></div>
           </button>
         ))}</div>
-      <button disabled={!selected} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/20 active:scale-[0.98] uppercase tracking-[0.2em] text-xs disabled:opacity-20">{t.continue}</button>
     </div>
   );
 };
 
-const StepCategory: React.FC<{ selected: Category | null; onSelect: (c: Category) => void; onContinue: () => void; t: any; }> = ({ selected, onSelect, onContinue, t }) => {
+const StepCategory: React.FC<{ selected: Category | null; onSelect: (c: Category) => void; t: any; }> = ({ selected, onSelect, t }) => {
   const categories: {label: string, value: Category}[] = [
     { label: 'Open / General', value: 'Open' }, { label: 'OBC', value: 'OBC' }, { label: 'SC / ST', value: 'SC' }, { label: 'SBC / VJNT', value: 'SBC' }, { label: 'SEBC', value: 'SEBC' }, { label: 'Minority', value: 'Minority' },
   ];
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8">
       <header className="space-y-2"><h2 className="text-2xl font-black text-slate-900 tracking-tight">{t.selectCategory}</h2><p className="text-slate-500 font-medium text-sm leading-relaxed">{t.selectCategorySub}</p></header>
       <div className="grid grid-cols-1 gap-3 no-select">{categories.map(cat => (
-          <button key={cat.value} onClick={() => onSelect(cat.value)} className={`p-6 rounded-2xl border-2 font-black transition-all text-left flex items-center justify-between active:scale-[0.98] ${selected === cat.value ? 'border-blue-600 bg-blue-50/50 text-blue-900' : 'border-slate-100 bg-white text-slate-600'}`}><span className="text-base">{cat.label}</span>{selected === cat.value && (<div className="text-blue-600"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg></div>)}</button>
+          <button key={cat.value} onClick={() => onSelect(cat.value)} className={`p-5 rounded-2xl border-2 font-black transition-all text-left flex items-center justify-between active:scale-[0.98] ${selected === cat.value ? 'border-blue-600 bg-blue-50/30 text-blue-900' : 'border-slate-50 bg-[#fafafa] text-slate-600'}`}>
+            <span className="text-sm uppercase tracking-tight">{cat.label}</span>
+          </button>
         ))}</div>
-      <button disabled={!selected} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/20 active:scale-[0.98] uppercase tracking-[0.2em] text-xs disabled:opacity-20">{t.continue}</button>
     </div>
   );
 };
@@ -264,14 +267,14 @@ const StepYear: React.FC<{ state: AppState; onUpdate: (updates: Partial<AppState
   const isASC = state.stream === Stream.ASC;
   const isHostelEligible = !isASC && state.category && ['SC', 'ST', 'SBC', 'VJNT', 'Open'].includes(state.category);
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8">
       <header className="space-y-2"><h2 className="text-2xl font-black text-slate-900 tracking-tight">{t.selectYear}</h2><p className="text-slate-500 font-medium text-sm leading-relaxed">{t.selectYearSub}</p></header>
-      <div className="grid grid-cols-2 gap-4 no-select">{years.map(y => (
-          <button key={y} onClick={() => onUpdate({ currentYear: y })} className={`p-6 rounded-2xl border-2 font-black text-sm transition-all active:scale-[0.97] ${state.currentYear === y ? 'border-blue-600 bg-blue-50/50 text-blue-900 shadow-sm' : 'border-slate-100 bg-white text-slate-400'}`}>{y}{y === 1 ? 'st' : y === 2 ? 'nd' : y === 3 ? 'rd' : 'th'} Year</button>
+      <div className="grid grid-cols-2 gap-3 no-select">{years.map(y => (
+          <button key={y} onClick={() => onUpdate({ currentYear: y })} className={`p-5 rounded-2xl border-2 font-black text-xs uppercase transition-all active:scale-[0.97] ${state.currentYear === y ? 'border-blue-600 bg-blue-50/30 text-blue-900 shadow-md' : 'border-slate-50 bg-[#fafafa] text-slate-400'}`}>{y}{y === 1 ? 'st' : y === 2 ? 'nd' : y === 3 ? 'rd' : 'th'} Year</button>
         ))}</div>
-      {state.currentYear === 1 && (<div className="bg-rose-50 p-6 rounded-2xl space-y-5 no-select border-2 border-rose-100"><p className="text-xs font-black text-rose-900 uppercase tracking-widest leading-relaxed">{isMaster ? t.gapQuestionPG : t.gapQuestion}</p><div className="flex space-x-4">{[true, false].map(v => (<button key={v ? 'y' : 'n'} onClick={() => onUpdate({ hadGap: v })} className={`flex-1 p-4 rounded-xl border-2 font-black text-xs transition-all uppercase ${state.hadGap === v ? 'border-rose-600 bg-white text-rose-700 shadow-md' : 'border-white bg-white/50 text-rose-300'}`}>{v ? t.yes : t.no}</button>))}</div></div>)}
-      {isHostelEligible && (<div className="bg-blue-50 p-6 rounded-2xl space-y-5 no-select border-2 border-blue-100"><p className="text-xs font-black text-blue-900 uppercase tracking-widest leading-relaxed">{t.hostelQuestion}</p><div className="flex space-x-4">{[true, false].map(v => (<button key={v ? 'hy' : 'hn'} onClick={() => onUpdate({ isHosteller: v })} className={`flex-1 p-4 rounded-xl border-2 font-black text-xs transition-all uppercase ${state.isHosteller === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/50 text-blue-300'}`}>{v ? t.yes : t.no}</button>))}</div></div>)}
-      <button disabled={!state.currentYear} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/20 uppercase tracking-[0.2em] text-xs disabled:opacity-20">{t.continue}</button>
+      {state.currentYear === 1 && (<div className="bg-slate-50 p-6 rounded-2xl space-y-5 no-select border border-slate-200"><p className="text-[11px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{isMaster ? t.gapQuestionPG : t.gapQuestion}</p><div className="flex space-x-3">{[true, false].map(v => (<button key={v ? 'y' : 'n'} onClick={() => onUpdate({ hadGap: v })} className={`flex-1 p-4 rounded-xl border-2 font-black text-[10px] transition-all uppercase ${state.hadGap === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>{v ? t.yes : t.no}</button>))}</div></div>)}
+      {isHostelEligible && (<div className="bg-slate-50 p-6 rounded-2xl space-y-5 no-select border border-slate-200"><p className="text-[11px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{t.hostelQuestion}</p><div className="flex space-x-3">{[true, false].map(v => (<button key={v ? 'hy' : 'hn'} onClick={() => onUpdate({ isHosteller: v })} className={`flex-1 p-4 rounded-xl border-2 font-black text-[10px] transition-all uppercase ${state.isHosteller === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>{v ? t.yes : t.no}</button>))}</div></div>)}
+      <button disabled={!state.currentYear} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/10 uppercase tracking-[0.2em] text-[11px] disabled:opacity-20 h-16">{t.continue}</button>
     </div>
   );
 };
@@ -279,28 +282,44 @@ const StepYear: React.FC<{ state: AppState; onUpdate: (updates: Partial<AppState
 const StepLoginCheck: React.FC<{ ready: AppState['loginReady']; onToggle: (f: keyof AppState['loginReady']) => void; onContinue: () => void; t: any; }> = ({ ready, onToggle, onContinue, t }) => {
   const isReady = ready.username && ready.password && ready.mobile;
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8">
       <header className="space-y-2"><h2 className="text-2xl font-black text-slate-900 tracking-tight">{t.loginCheck}</h2><p className="text-slate-500 font-medium text-sm leading-relaxed">{t.loginCheckSub}</p></header>
-      <div className="bg-rose-50 p-8 rounded-3xl space-y-5 no-select border-2 border-rose-100 shadow-inner">{[ { id: 'username', label: t.loginUser }, { id: 'password', label: t.loginPass }, { id: 'mobile', label: t.loginMobile } ].map(item => (
-          <label key={item.id} className="flex items-center space-x-5 cursor-pointer active:opacity-70 group">
-            <div className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center transition-all ${ready[item.id as keyof AppState['loginReady']] ? 'bg-rose-600 border-rose-600 shadow-lg' : 'bg-white border-rose-200'}`}>{ready[item.id as keyof AppState['loginReady']] && <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>}</div>
-            <input type="checkbox" checked={ready[item.id as keyof AppState['loginReady']]} onChange={() => onToggle(item.id as keyof AppState['loginReady'])} className="hidden" /><span className={`text-sm font-black tracking-tight uppercase ${ready[item.id as keyof AppState['loginReady']] ? 'text-rose-900' : 'text-rose-300'}`}>{item.label}</span>
+      <div className="bg-slate-50 p-7 rounded-3xl space-y-4 no-select border border-slate-200 shadow-inner">{[ { id: 'username', label: t.loginUser }, { id: 'password', label: t.loginPass }, { id: 'mobile', label: t.loginMobile } ].map(item => (
+          <label key={item.id} className="flex items-center space-x-4 cursor-pointer active:opacity-70 group py-1">
+            <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${ready[item.id as keyof AppState['loginReady']] ? 'bg-blue-600 border-blue-600 shadow-lg' : 'bg-white border-slate-200'}`}>{ready[item.id as keyof AppState['loginReady']] && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>}</div>
+            <input type="checkbox" checked={ready[item.id as keyof AppState['loginReady']]} onChange={() => onToggle(item.id as keyof AppState['loginReady'])} className="hidden" /><span className={`text-[11px] font-black tracking-tight uppercase ${ready[item.id as keyof AppState['loginReady']] ? 'text-blue-900' : 'text-slate-400'}`}>{item.label}</span>
           </label>
         ))}</div>
-      <button disabled={!isReady} onClick={onContinue} className="w-full bg-rose-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-rose-900/20 active:scale-[0.98] uppercase tracking-[0.2em] text-xs disabled:opacity-20">{t.continue}</button>
+      <button disabled={!isReady} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.2em] text-[11px] disabled:opacity-20 h-16">{t.continue}</button>
     </div>
   );
 };
 
-// CHOICE PILL COMPONENT
 const ChoicePill: React.FC<{ label: string; subtext?: string }> = ({ label, subtext }) => (
-  <div className="inline-flex items-center bg-blue-50 border border-blue-100 rounded-full px-3 py-1.5 space-x-2 shadow-sm animate-in fade-in zoom-in duration-300 mb-3">
-    <div className="w-3.5 h-3.5 bg-blue-600 rounded-full flex items-center justify-center">
+  <div className="inline-flex items-center bg-blue-50 border border-blue-100 rounded-full px-3 py-1.5 space-x-2 shadow-sm mb-3">
+    <div className="w-3.5 h-3.5 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
       <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>
     </div>
     <div className="flex flex-col">
-      <span className="text-[10px] font-black text-blue-700 uppercase tracking-tight leading-none whitespace-nowrap">{label}</span>
+      <span className="text-[9px] font-black text-blue-700 uppercase tracking-tight leading-none">{label}</span>
       {subtext && <span className="text-[7px] font-bold text-blue-400 uppercase tracking-tighter leading-none mt-0.5">{subtext}</span>}
+    </div>
+  </div>
+);
+
+const DeclarationCard: React.FC<{ title: string; instruction: string; fileName: string; downloadUrl: string }> = ({ title, instruction, fileName, downloadUrl }) => (
+  <div className="bg-white border border-slate-100 p-5 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-200 transition-all group flex flex-col">
+    <div className="flex justify-between items-start mb-3">
+      <h4 className="font-black text-slate-800 text-[13px] leading-tight group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-4">{title}</h4>
+      <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 bg-slate-100 hover:bg-blue-600 text-slate-500 hover:text-white p-2 rounded-xl transition-all shadow-sm">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+      </a>
+    </div>
+    <p className="text-[10px] font-medium text-slate-400 mb-4 leading-relaxed">{instruction}</p>
+    <div className="mt-auto pt-4 border-t border-slate-50 flex flex-wrap gap-2">
+      <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-2 py-0.5 rounded uppercase tracking-widest">PDF ONLY</span>
+      <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-2 py-0.5 rounded uppercase tracking-widest">MAX 250 KB</span>
+      <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded uppercase tracking-tight italic">FILE: {fileName}</span>
     </div>
   </div>
 );
@@ -359,76 +378,115 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
 
   const choiceDocs = useMemo(() => {
     if (['Open', 'OBC', 'SEBC', 'SBC', 'VJNT'].includes(state.category!)) {
-      return ['Alpabhudharak Certificate', 'Job Card (MGNREGA)'];
+      return ['Alpabhudharak Certificate', 'Job Card'];
+    }
+    return null;
+  }, [state.category]);
+
+  const declarationForms = useMemo(() => {
+    const commonDeclLink = "https://www.atharvacoe.ac.in/wp-content/uploads/Pratidnya-Patra.pdf";
+    const minorityDeclLink = "https://www.mhssce.ac.in/pdf/Income_Self_declaration_minority.pdf";
+
+    if (state.category === 'Open') {
+      return [
+        {
+          title: "Declaration Form 1 + Ration Card",
+          instruction: "Download the declaration form, fill it properly, and attach Ration Card (Front and Back). Merge declaration + ration card into ONE PDF.",
+          fileName: "Declaration1_RationCard.pdf",
+          downloadUrl: commonDeclLink
+        },
+        {
+          title: "Declaration Form 2 + Ration Card",
+          instruction: "Download the declaration form again, fill it properly, and attach Ration Card (Front and Back). Merge declaration + ration card into ONE PDF.",
+          fileName: "Declaration2_RationCard.pdf",
+          downloadUrl: commonDeclLink
+        }
+      ];
+    }
+    if (['OBC', 'SC', 'ST', 'SBC', 'VJNT', 'SEBC'].includes(state.category!)) {
+      return [
+        {
+          title: "Declaration Form",
+          instruction: "Download the declaration form and fill it correctly. Scan and upload as a single PDF.",
+          fileName: "Declaration.pdf",
+          downloadUrl: commonDeclLink
+        }
+      ];
+    }
+    if (state.category === 'Minority') {
+      return [
+        {
+          title: "Income Self Declaration (Minority)",
+          instruction: "Download the income self-declaration form and fill it correctly. Scan and upload as a single PDF.",
+          fileName: "Minority_Declaration.pdf",
+          downloadUrl: minorityDeclLink
+        }
+      ];
     }
     return null;
   }, [state.category]);
 
   return (
-    <div className="space-y-10 animate-in slide-in-from-bottom-6 duration-700">
+    <div className="space-y-10">
       <header className="space-y-4">
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">{t.docsTitle}</h2>
-        <div className="flex flex-wrap gap-2">
+        <h2 className="text-3xl font-black text-slate-900 tracking-tight leading-tight uppercase">{t.docsTitle}</h2>
+        <div className="flex flex-wrap gap-1.5">
           {[state.courseType || state.stream, state.category, `${state.currentYear} Year`, isFresh ? t.freshApp : t.renewalApp].map((pill, i) => (
-            <span key={i} className="px-4 py-2 bg-blue-50 text-blue-700 text-[10px] font-black rounded-xl uppercase border border-blue-100 shadow-sm tracking-tight">{pill}</span>
+            <span key={i} className="px-3 py-1.5 bg-slate-50 text-slate-500 text-[9px] font-black rounded-lg uppercase border border-slate-100 shadow-sm tracking-tight">{pill}</span>
           ))}
         </div>
       </header>
 
-      <div className="p-7 bg-slate-900 text-white rounded-3xl relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-3xl" />
-        <h4 className="text-blue-400 font-black text-[10px] uppercase tracking-[0.4em] mb-5">Submission Protocol</h4>
-        <ul className="space-y-4 text-xs font-bold leading-relaxed">
-          <li className="flex items-start space-x-4"><div className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(59,130,246,0.8)]"/> <span>{t.rulePdf}</span></li>
-          <li className="flex items-start space-x-4"><div className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(59,130,246,0.8)]"/> <span>{t.ruleSize}</span></li>
-          <li className="flex items-start space-x-4"><div className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(59,130,246,0.8)]"/> <span className="text-blue-200">{t.ruleNaming}</span></li>
+      <div className="p-6 bg-[#1e3a8a] text-white rounded-3xl relative overflow-hidden shadow-xl shadow-blue-900/10">
+        <h4 className="text-blue-300 font-black text-[10px] uppercase tracking-[0.4em] mb-5">Submission Protocol</h4>
+        <ul className="space-y-3.5 text-xs font-bold leading-relaxed opacity-90">
+          <li className="flex items-start space-x-3"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span>{t.rulePdf}</span></li>
+          <li className="flex items-start space-x-3"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span>{t.ruleSize}</span></li>
+          <li className="flex items-start space-x-3"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span className="text-blue-100/70 italic font-medium">{t.ruleNaming}</span></li>
         </ul>
       </div>
 
-      {['Open', 'OBC', 'Minority', 'SBC', 'VJNT', 'SEBC'].includes(state.category!) && (
-        <section className="p-7 bg-rose-50 border-2 border-rose-100 rounded-3xl space-y-5 shadow-sm">
-          <h3 className="font-black text-rose-900 text-[11px] uppercase tracking-widest">{t.declarationTitle}</h3>
-          <div className="bg-white p-6 rounded-2xl border-2 border-rose-200 shadow-sm">
-            <h4 className="font-black text-rose-800 text-base mb-2">{state.category === 'Open' ? t.declOpenTitle : state.category === 'Minority' ? t.declMinorityTitle : t.declObcTitle}</h4>
-            <p className="text-xs font-bold text-rose-600/70 mb-6 leading-relaxed">{state.category === 'Open' ? t.declOpenInst : state.category === 'Minority' ? t.declMinorityInst : t.declObcInst}</p>
-            <div className="flex flex-col space-y-3">
-              <a href="https://www.mahadbt.gov.in" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center bg-rose-600 text-white p-4 rounded-xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-rose-900/10"><span>{t.downloadForm}</span></a>
-              <button onClick={() => onOpenVideo(t.howToFill, "Instruction", "#")} className="flex items-center justify-center bg-white border-2 border-rose-200 text-rose-600 p-4 rounded-xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all"><span>{t.howToFill}</span></button>
-            </div>
-          </div>
-        </section>
-      )}
-
       <div className="space-y-12">
+        {declarationForms && (
+          <section className="space-y-5">
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] px-2">Declaration Documents</p>
+            <div className="space-y-3">
+              {declarationForms.map((decl, idx) => (
+                <DeclarationCard key={idx} {...decl} />
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="space-y-5">
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] px-2">{t.academicDocs}</p>
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] px-2">{t.academicDocs}</p>
           <div className="space-y-3">
             {academicDocs.map((doc, idx) => (
-              <div key={idx} className="bg-white border-2 border-slate-50 p-5 rounded-2xl shadow-sm hover:border-blue-100 transition-colors group">
-                <h4 className="font-black text-slate-800 text-sm leading-tight group-hover:text-blue-900 transition-colors">{doc.name}</h4>
+              <div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group">
+                <h4 className="font-black text-slate-700 text-[13px] leading-tight group-hover:text-blue-900 transition-colors uppercase tracking-tight">{doc.name}</h4>
               </div>
             ))}
           </div>
         </section>
 
         <section className="space-y-5">
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] px-2">{t.categoryDocs}</p>
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] px-2">{t.categoryDocs}</p>
           <div className="space-y-3">
             {govtDocs.map((doc, idx) => (
-              <div key={idx} className="bg-white border-2 border-slate-50 p-5 rounded-2xl shadow-sm hover:border-blue-100 transition-colors group">
-                <h4 className="font-black text-slate-800 text-sm leading-tight group-hover:text-blue-900 transition-colors">{doc.name}</h4>
+              <div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group">
+                <h4 className="font-black text-slate-700 text-[13px] leading-tight group-hover:text-blue-900 transition-colors uppercase tracking-tight">{doc.name}</h4>
               </div>
             ))}
 
             {choiceDocs && (
-              <div className="bg-blue-50/40 rounded-3xl p-6 border-2 border-blue-100/50 space-y-2 mt-4">
+              <div className="bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100 space-y-2 mt-4">
                 <ChoicePill label="Any One Required" subtext="Upload only one document" />
                 <div className="space-y-2">
                   {choiceDocs.map((name, idx) => (
-                    <div key={idx} className="bg-white border-2 border-blue-100/30 p-5 rounded-2xl shadow-sm flex items-center justify-between group">
-                      <h4 className="font-black text-blue-900 text-sm leading-tight">{name}</h4>
-                      <div className="w-5 h-5 border-2 border-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-50 transition-colors">
-                         <div className="w-2 h-2 bg-blue-600/20 rounded-full" />
+                    <div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-center justify-between group">
+                      <h4 className="font-black text-slate-800 text-[12px] leading-tight uppercase tracking-tight">{name}</h4>
+                      <div className="w-4 h-4 border-2 border-blue-50 rounded-full flex items-center justify-center bg-blue-50/50">
+                         <div className="w-1.5 h-1.5 bg-blue-600/30 rounded-full" />
                       </div>
                     </div>
                   ))}
@@ -439,39 +497,23 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
         </section>
       </div>
 
-      <section className="space-y-6 pt-10 border-t-2 border-slate-100">
-        <h3 className="font-black text-slate-900 text-xl uppercase tracking-tight">{t.videoHelpTitle}</h3>
-        <div className="grid grid-cols-1 gap-3">
-          {[
-            { title: t.videoMergeTitle, desc: t.videoMergeDesc, url: 'https://www.youtube.com' },
-            { title: t.videoCompressTitle, desc: t.videoCompressDesc, url: 'https://www.youtube.com' },
-            { title: t.videoImgToPdfTitle, desc: t.videoImgToPdfDesc, url: 'https://www.youtube.com' },
-          ].map((v, i) => (
-            <button key={i} onClick={() => onOpenVideo(v.title, v.desc, v.url)} className="w-full flex items-center p-5 bg-slate-50 border-2 border-transparent hover:border-blue-100 rounded-2xl active:scale-[0.98] transition-all text-left">
-              <div className="w-12 h-12 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center shrink-0 font-black shadow-sm">▶</div>
-              <div className="ml-5"><h4 className="font-black text-slate-800 text-sm uppercase tracking-tight">{v.title}</h4><p className="text-[10px] font-bold text-slate-400 mt-1">{v.desc}</p></div>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-6 pt-6">
-        <h3 className="font-black text-slate-900 text-xl uppercase tracking-tight">{t.docToolsTitle}</h3>
+      <section className="space-y-6 pt-10 border-t border-slate-100">
+        <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight">{t.docToolsTitle}</h3>
         <div className="grid grid-cols-1 gap-3">
           {[
             { label: t.btnMerge, sub: t.helperMerge, url: 'https://www.ilovepdf.com/merge_pdf' },
             { label: t.btnCompress, sub: t.helperCompress, url: 'https://www.ilovepdf.com/compress_pdf' },
             { label: t.btnImgToPdf, sub: t.helperImgToPdf, url: 'https://www.ilovepdf.com/jpg_to_pdf' },
           ].map((tool, i) => (
-            <a key={i} href={tool.url} target="_blank" rel="noopener noreferrer" className="p-5 rounded-2xl border-2 border-slate-50 hover:border-blue-200 bg-white shadow-sm active:scale-[0.98] transition-all flex flex-col group">
-              <span className="font-black text-xs uppercase tracking-widest text-slate-800 group-hover:text-blue-900">{tool.label}</span>
-              <span className="text-[10px] font-bold text-slate-400 mt-2 group-hover:text-slate-500">{tool.sub}</span>
+            <a key={i} href={tool.url} target="_blank" rel="noopener noreferrer" className="p-5 rounded-2xl border border-slate-100 hover:border-blue-300 hover:bg-white bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] active:scale-[0.98] transition-all flex flex-col group">
+              <span className="font-black text-[11px] uppercase tracking-widest text-slate-800 group-hover:text-blue-900 transition-colors">{tool.label}</span>
+              <span className="text-[9px] font-bold text-slate-400 mt-2 group-hover:text-slate-500 transition-colors">{tool.sub}</span>
             </a>
           ))}
         </div>
       </section>
 
-      <button onClick={onRestart} className="w-full bg-blue-900 text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-900/40 active:scale-[0.98] uppercase tracking-[0.3em] text-xs mt-4 transition-all hover:bg-blue-800">{t.home}</button>
+      <button onClick={onRestart} className="w-full bg-blue-900 text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.3em] text-[11px] mt-6 transition-all hover:bg-blue-800 h-16">{t.home}</button>
     </div>
   );
 };
