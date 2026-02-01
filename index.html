@@ -29,20 +29,18 @@
       }
 
       html[lang="hi"] body, html[lang="hi"] #root {
-        line-height: 1.65; /* Optimized for Hindi reading */
+        line-height: 1.65;
       }
 
       html[lang="mr"] body, html[lang="mr"] #root {
-        line-height: 1.68; /* Slightly more for Marathi conjuncts */
+        line-height: 1.68;
       }
 
-      /* Font weight mapping for Devanagari */
       html[lang="hi"] .font-black, html[lang="mr"] .font-black { font-weight: 800; }
       html[lang="hi"] .font-bold, html[lang="mr"] .font-bold { font-weight: 700; }
       html[lang="hi"] .font-semibold, html[lang="mr"] .font-semibold { font-weight: 600; }
       html[lang="hi"] .font-medium, html[lang="mr"] .font-medium { font-weight: 500; }
 
-      /* Fix for iOS 100vh issue */
       body {
         min-height: 100vh;
         min-height: -webkit-fill-available;
@@ -55,18 +53,15 @@
         min-height: -webkit-fill-available;
       }
 
-      /* Prevent text selection on UI components */
       .no-select {
         -webkit-user-select: none;
         user-select: none;
       }
 
-      /* Better scroll behavior for iOS */
       .scroll-container {
         -webkit-overflow-scrolling: touch;
       }
 
-      /* Safe area spacing */
       .pb-safe {
         padding-bottom: env(safe-area-inset-bottom, 0px);
       }
@@ -74,27 +69,15 @@
         padding-top: env(safe-area-inset-top, 0px);
       }
 
-      /* Smooth transitions for mobile */
       * {
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      /* Prevent zoom on focus for inputs on iOS */
       input, select, textarea {
         font-size: 16px !important;
       }
     </style>
-    <script type="importmap">
-    {
-      "imports": {
-        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-        "react": "https://esm.sh/react@^19.2.4",
-        "react/": "https://esm.sh/react@^19.2.4/"
-      }
-    }
-    </script>
     <script>
-      // Handle actual height for mobile browsers (with address bars)
       const appHeight = () => {
         const doc = document.documentElement;
         doc.style.setProperty('--app-height', `${window.innerHeight}px`);
@@ -102,8 +85,21 @@
       window.addEventListener('resize', appHeight);
       appHeight();
     </script>
-  </head>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+</head>
   <body>
     <div id="root"></div>
+    <!-- Entry point for Vite/React -->
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>
