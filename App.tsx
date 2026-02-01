@@ -3,7 +3,7 @@ import { Stream, CourseType, Category, AppState, Language } from './types';
 import { StreamIcons } from './constants';
 import { translations } from './translations';
 
-const PERSISTENCE_KEY = 'mahadbt_assist_state_v3';
+const PERSISTENCE_KEY = 'mahadbt_assist_state_v4';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
@@ -135,46 +135,45 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Header - Reduced height and added rounded bottom */}
-      <header className="bg-[#1e3a8a] text-white pt-8 pb-12 px-6 sticky top-0 z-40 pt-safe no-select shadow-xl shadow-blue-900/5 rounded-b-[2.5rem]">
-        <div className="max-w-2xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
+      {/* Header - Further reduced padding and height to prevent overlap */}
+      <header className="bg-[#1e3a8a] text-white pt-10 pb-12 px-6 sticky top-0 z-40 pt-safe no-select shadow-xl rounded-b-[2rem]">
+        <div className="max-w-2xl mx-auto flex flex-col">
+          <div className="flex items-center justify-between mb-8">
             <div className="flex flex-col">
-              <h1 className="font-black text-xl tracking-tighter leading-none uppercase">Pathrikar Campus</h1>
-              <p className="text-[10px] text-blue-300 uppercase tracking-[0.2em] mt-1.5 font-bold opacity-80">{t.subtitle}</p>
+              <h1 className="font-black text-2xl tracking-tighter leading-none uppercase">Pathrikar Campus</h1>
+              <p className="text-[10px] font-bold text-blue-200/60 uppercase tracking-widest mt-2">{t.subtitle}</p>
             </div>
-            <div className="flex bg-blue-950/40 p-1 rounded-xl backdrop-blur-md border border-white/5">
+            <div className="flex bg-blue-900/50 p-1.5 rounded-2xl backdrop-blur-md border border-white/10">
               {(['en', 'hi', 'mr'] as Language[]).map(lang => (
                 <button 
                   key={lang} 
                   onClick={() => setState(prev => ({ ...prev, language: lang }))} 
-                  className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all duration-300 ${state.language === lang ? 'bg-white text-blue-900 shadow-md' : 'text-blue-200/60 hover:text-white'}`}
+                  className={`px-3 py-1.5 text-[10px] font-black rounded-xl transition-all duration-300 ${state.language === lang ? 'bg-white text-blue-900 shadow-lg' : 'text-blue-200/50 hover:text-white'}`}
                 >
                   {lang === 'en' ? 'EN' : lang === 'hi' ? 'हिं' : 'मराठी'}
                 </button>
               ))}
             </div>
           </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-end">
-               <span className="text-[10px] font-black text-blue-200/60 uppercase tracking-widest">{t.step} {state.step} / 6</span>
-               <div className="flex space-x-1">
-                  {[1, 2, 3, 4, 5, 6].map(i => (
-                    <div key={i} className={`h-1 rounded-full transition-all duration-500 ${state.step >= i ? 'w-4 bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'w-1 bg-blue-800'}`} />
-                  ))}
-               </div>
+          
+          <div className="flex flex-col items-end space-y-2">
+            <span className="text-[9px] font-black text-white uppercase tracking-widest">{t.step} {state.step} {t.of} 6</span>
+            <div className="flex w-full space-x-2">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className={`h-[3px] flex-grow rounded-full transition-all duration-500 ${state.step >= i ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'bg-blue-400/30'}`} />
+              ))}
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content - Adjusted margin to avoid overlap and match rounded design */}
-      <main className="max-w-2xl mx-auto relative z-30 flex-grow w-full mt-4 px-0 sm:px-4">
-        <div className="bg-white min-h-[500px] p-6 rounded-3xl border border-slate-100 overflow-hidden pb-12 shadow-sm">
+      {/* Main Content - Reduced negative margin to ensure clear view of contents */}
+      <main className="max-w-2xl mx-auto relative z-30 flex-grow w-full -mt-6 px-0 sm:px-4">
+        <div className="bg-white min-h-[500px] p-6 pt-8 rounded-t-[2.5rem] sm:rounded-3xl border-x border-t border-slate-100 overflow-hidden pb-12 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
           {state.step > 1 && (
-            <button onClick={prevStep} className="mb-6 flex items-center space-x-2 text-slate-400 hover:text-blue-600 font-bold text-[10px] uppercase tracking-widest transition-all touch-manipulation group">
-              <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-blue-50 transition-colors">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <button onClick={prevStep} className="mb-8 flex items-center space-x-2 text-slate-400 hover:text-blue-600 font-bold text-[10px] uppercase tracking-widest transition-all touch-manipulation group">
+              <div className="p-2.5 bg-slate-50 rounded-xl group-hover:bg-blue-50 transition-colors">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </div>
               <span className="group-hover:translate-x-0.5 transition-transform">{t.back}</span>
             </button>
@@ -296,16 +295,35 @@ const StepLoginCheck: React.FC<{ ready: AppState['loginReady']; onToggle: (f: ke
 };
 
 const ChoicePill: React.FC<{ label: string; subtext?: string }> = ({ label, subtext }) => (
-  <div className="inline-flex items-center bg-blue-50 border border-blue-100 rounded-full px-3 py-1.5 space-x-2 shadow-sm mb-3">
+  <div className="inline-flex items-center bg-blue-50 border border-blue-100 rounded-full px-3 py-1.5 space-x-2 shadow-sm mb-3 max-w-full overflow-hidden">
     <div className="w-3.5 h-3.5 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
       <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>
     </div>
-    <div className="flex flex-col">
-      <span className="text-[9px] font-black text-blue-700 uppercase tracking-tight leading-none">{label}</span>
-      {subtext && <span className="text-[7px] font-bold text-blue-400 uppercase tracking-tighter leading-none mt-0.5">{subtext}</span>}
+    <div className="flex flex-col min-w-0">
+      <span className="text-[9px] font-black text-blue-700 uppercase tracking-tight leading-none truncate">{label}</span>
+      {subtext && <span className="text-[7px] font-bold text-blue-400 uppercase tracking-tighter leading-none mt-0.5 truncate">{subtext}</span>}
     </div>
   </div>
 );
+
+const DocBadge: React.FC<{ type: 'merge' | 'onepdf' | 'optional' | 'ifavailable' | 'anyone' }> = ({ type }) => {
+  const config = {
+    merge: { text: 'MERGE REQUIRED', colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
+    onepdf: { text: 'ONE PDF', colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
+    optional: { text: 'OPTIONAL', colors: 'bg-slate-50 text-slate-500 border-slate-200', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    ifavailable: { text: 'IF AVAILABLE', colors: 'bg-slate-50 text-slate-500 border-slate-200', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    anyone: { text: 'ANY ONE REQUIRED', colors: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: 'M5 13l4 4L19 7' },
+  }[type];
+
+  return (
+    <div className={`inline-flex items-center px-2 py-1 rounded-full border ${config.colors} whitespace-nowrap shrink-0 ml-2`}>
+      <svg className="w-2.5 h-2.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d={config.icon} />
+      </svg>
+      <span className="text-[8px] font-black uppercase tracking-tight">{config.text}</span>
+    </div>
+  );
+};
 
 const DeclarationCard: React.FC<{ title: string; instruction: string; fileName: string; downloadUrl: string }> = ({ title, instruction, fileName, downloadUrl }) => (
   <div className="bg-white border border-slate-100 p-5 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-200 transition-all group flex flex-col">
@@ -332,8 +350,8 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
   const isProfessional = state.stream !== Stream.ASC && state.stream !== null;
 
   const academicDocs = useMemo(() => {
-    const docs: { name: string }[] = [];
-    docs.push({ name: 'Admission Bonafide + Fees Paid Receipt (Merge required)' });
+    const docs: { name: string; badge?: any }[] = [];
+    docs.push({ name: 'Admission Bonafide + Fees Paid Receipt', badge: 'merge' });
     docs.push({ name: '10th Marksheet' });
     docs.push({ name: '12th Marksheet' });
     if (!isASC) docs.push({ name: t.docAllotment });
@@ -344,14 +362,14 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       } else {
         docs.push({ name: 'Previous College TC / Leaving Certificate' });
       }
-      if (state.hadGap) docs.push({ name: 'Gap Certificate' });
+      if (state.hadGap) docs.push({ name: 'Gap Certificate', badge: 'onepdf' });
     } else {
       if (!isASC) {
-        if (isDPharm) docs.push({ name: '1st Year Marksheet (Single PDF)' });
+        if (isDPharm) docs.push({ name: '1st Year Marksheet', badge: 'onepdf' });
         else {
-          if (state.currentYear! >= 2) docs.push({ name: 'Sem 1 + Sem 2 Marksheet (ONE PDF)' });
-          if (state.currentYear! >= 3) docs.push({ name: 'Sem 3 + Sem 4 Marksheet (ONE PDF)' });
-          if (state.currentYear! >= 4) docs.push({ name: 'Sem 5 + Sem 6 Marksheet (ONE PDF)' });
+          if (state.currentYear! >= 2) docs.push({ name: 'Sem 1 + Sem 2 Marksheet', badge: 'onepdf' });
+          if (state.currentYear! >= 3) docs.push({ name: 'Sem 3 + Sem 4 Marksheet', badge: 'onepdf' });
+          if (state.currentYear! >= 4) docs.push({ name: 'Sem 5 + Sem 6 Marksheet', badge: 'onepdf' });
         }
       }
       docs.push({ name: isMaster ? t.docGradTC : 'Previous College TC / Leaving Certificate' });
@@ -360,7 +378,7 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
   }, [isASC, isFresh, isMaster, isDPharm, state.currentYear, state.hadGap, t]);
 
   const govtDocs = useMemo(() => {
-    const docs: { name: string; optional?: boolean }[] = [];
+    const docs: { name: string; badge?: any }[] = [];
     docs.push({ name: 'Aadhaar Card' });
     const incomeRequired = isFresh || ['Open', 'SEBC', 'Minority'].includes(state.category!);
     if (incomeRequired) docs.push({ name: 'Income Certificate' });
@@ -368,8 +386,8 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     if (state.category !== 'Open' && state.category !== 'Minority') {
       docs.push({ name: 'Caste Certificate' });
       if (isProfessional) {
-        if (['OBC', 'SEBC', 'SBC', 'VJNT'].includes(state.category!)) docs.push({ name: t.docNCL, optional: true });
-        docs.push({ name: t.docCasteValidity, optional: true });
+        if (['OBC', 'SEBC', 'SBC', 'VJNT'].includes(state.category!)) docs.push({ name: t.docNCL, badge: 'ifavailable' });
+        docs.push({ name: t.docCasteValidity, badge: 'ifavailable' });
       }
     }
     docs.push({ name: 'Domicile Certificate' });
@@ -462,8 +480,9 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
           <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] px-2">{t.academicDocs}</p>
           <div className="space-y-3">
             {academicDocs.map((doc, idx) => (
-              <div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group">
-                <h4 className="font-black text-slate-700 text-[13px] leading-tight group-hover:text-blue-900 transition-colors uppercase tracking-tight">{doc.name}</h4>
+              <div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group flex items-start justify-between min-w-0">
+                <h4 className="font-black text-slate-700 text-[12px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow">{doc.name}</h4>
+                {doc.badge && <DocBadge type={doc.badge} />}
               </div>
             ))}
           </div>
@@ -473,21 +492,23 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
           <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] px-2">{t.categoryDocs}</p>
           <div className="space-y-3">
             {govtDocs.map((doc, idx) => (
-              <div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group">
-                <h4 className="font-black text-slate-700 text-[13px] leading-tight group-hover:text-blue-900 transition-colors uppercase tracking-tight">{doc.name}</h4>
+              <div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group flex items-start justify-between min-w-0">
+                <h4 className="font-black text-slate-700 text-[12px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow">{doc.name}</h4>
+                {doc.badge && <DocBadge type={doc.badge} />}
               </div>
             ))}
 
             {choiceDocs && (
-              <div className="bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100 space-y-2 mt-4">
-                <ChoicePill label="Any One Required" subtext="Upload only one document" />
+              <div className="bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100 space-y-4 mt-4">
+                <div className="flex flex-col space-y-1">
+                  <span className="text-[9px] font-black text-emerald-700 uppercase tracking-tight">ANY ONE REQUIRED</span>
+                  <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">UPLOAD ONLY ONE DOCUMENT</span>
+                </div>
                 <div className="space-y-2">
                   {choiceDocs.map((name, idx) => (
-                    <div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-center justify-between group">
-                      <h4 className="font-black text-slate-800 text-[12px] leading-tight uppercase tracking-tight">{name}</h4>
-                      <div className="w-4 h-4 border-2 border-blue-50 rounded-full flex items-center justify-center bg-blue-50/50">
-                         <div className="w-1.5 h-1.5 bg-blue-600/30 rounded-full" />
-                      </div>
+                    <div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-start justify-between group min-w-0">
+                      <h4 className="font-black text-slate-800 text-[12px] leading-relaxed uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow">{name}</h4>
+                      <DocBadge type="anyone" />
                     </div>
                   ))}
                 </div>
