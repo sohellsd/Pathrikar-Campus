@@ -7,19 +7,19 @@ export enum Stream {
 }
 
 export enum CourseType {
-  BPharm = 'B-Pharmacy (Degree)',
-  DPharm = 'D-Pharmacy (Diploma)',
-  MPharm = 'M-Pharmacy (Post-Grad)',
-  MBA = 'MBA (Management)',
-  MCA = 'MCA (Computer Apps)',
-  BBA = 'BBA (Management)',
-  BCA = 'BCA (Computer Apps)',
-  BA = 'Bachelor of Arts (BA)',
-  BSc = 'Bachelor of Science (BSc)',
-  BCom = 'Bachelor of Commerce (BCom)',
-  MA = 'Master of Arts (MA)',
-  MSc = 'Master of Science (MSc)',
-  MCom = 'Master of Commerce (MCom)'
+  BPharm = 'B-Pharmacy',
+  DPharm = 'D-Pharmacy',
+  MPharm = 'M-Pharmacy',
+  MBA = 'MBA',
+  MCA = 'MCA',
+  BBA = 'BBA',
+  BCA = 'BCA',
+  BA = 'BA',
+  BSc = 'BSc',
+  BCom = 'B.Com',
+  MA = 'MA',
+  MSc = 'MSc',
+  MCom = 'M.Com'
 }
 
 export type Category = 'Open' | 'OBC' | 'SC' | 'ST' | 'SBC' | 'VJNT' | 'SEBC' | 'Minority';
@@ -35,6 +35,7 @@ export interface AppState {
   currentYear: number | null;
   isHosteller: boolean;
   hadGap: boolean;
+  isDirectSecondYear: boolean | null;
   loginReady: {
     username: boolean;
     password: boolean;
