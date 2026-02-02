@@ -3,8 +3,13 @@ import { createPortal } from 'react-dom';
 import { Stream, CourseType, Category, AppState, Language } from './types';
 import { StreamIcons } from './constants';
 import { translations } from './translations';
+import { PDFDocument } from 'pdf-lib';
+import { jsPDF } from 'jspdf';
+import heic2any from 'heic2any';
 
 const PERSISTENCE_KEY = 'mahadbt_assist_state_v4';
+const MAX_INPUT_SIZE_BYTES = 7 * 1024 * 1024; // 7MB
+const TARGET_SIZE_KB = 230;
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
@@ -39,6 +44,7 @@ const App: React.FC = () => {
   }, [state.language]);
 
   const [activeVideo, setActiveVideo] = useState<{ title: string; desc: string; url?: string } | null>(null);
+  const [activeTool, setActiveTool] = useState<'merge' | 'compress' | 'img2pdf' | null>(null);
 
   const t = translations[state.language];
   const isRenewal = useMemo(() => state.currentYear !== null && state.currentYear > 1, [state.currentYear]);
@@ -122,7 +128,14 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col selection:bg-blue-100">
-      {/* Video Overlay */}
+      {activeTool && (
+        <DocToolModal 
+          type={activeTool} 
+          t={t} 
+          onClose={() => setActiveTool(null)} 
+        />
+      )}
+
       {activeVideo && (
         <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-6 no-print video-overlay" onClick={() => setActiveVideo(null)}>
           <div className="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl relative border border-slate-200" onClick={e => e.stopPropagation()}>
@@ -140,7 +153,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Header */}
       <header className="bg-[#1e3a8a] text-white pt-10 pb-12 px-6 sticky top-0 z-40 pt-safe no-select shadow-xl rounded-b-[2rem] no-print">
         <div className="max-w-2xl mx-auto flex flex-col">
           <div className="flex items-center justify-between mb-8">
@@ -172,7 +184,6 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-2xl mx-auto relative z-30 flex-grow w-full -mt-6 px-0 sm:px-4">
         <div className="bg-white min-h-[500px] p-6 pt-8 rounded-t-[2.5rem] sm:rounded-3xl border-x border-t border-slate-100 overflow-hidden pb-12 shadow-[0_-10px_20px_rgba(0,0,0,0.02)] step-container">
           {state.step > 1 && (
@@ -190,7 +201,7 @@ const App: React.FC = () => {
             {state.step === 3 && <StepStepCategory selected={state.category} onSelect={handleCategorySelect} t={t} />}
             {state.step === 4 && <StepYear state={state} onUpdate={updates => setState(prev => ({ ...prev, ...updates }))} onContinue={nextStep} t={t} />}
             {state.step === 5 && <StepLoginCheck ready={state.loginReady} onToggle={field => setState(prev => ({ ...prev, loginReady: { ...prev.loginReady, [field]: !prev.loginReady[field] } }))} onContinue={nextStep} t={t} />}
-            {state.step === 6 && <StepDocumentList state={state} onRestart={handleRestart} onBack={prevStep} onOpenVideo={(title, desc, url) => setActiveVideo({ title, desc, url })} t={t} />}
+            {state.step === 6 && <StepDocumentList state={state} onRestart={handleRestart} onBack={prevStep} onOpenVideo={(title, desc, url) => setActiveVideo({ title, desc, url })} onOpenTool={setActiveTool} t={t} />}
           </div>
         </div>
       </main>
@@ -202,6 +213,296 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+// --- DOC TOOL MODAL ---
+
+const DocToolModal: React.FC<{ type: 'merge' | 'compress' | 'img2pdf'; t: any; onClose: () => void }> = ({ type, t, onClose }) => {
+  const [files, setFiles] = useState<File[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [outputBlob, setOutputBlob] = useState<{ blob: Blob; name: string } | null>(null);
+  const [newName, setNewName] = useState("");
+  const [error, setError] = useState("");
+  const [progress, setProgress] = useState(0);
+
+  const totalInputSize = useMemo(() => files.reduce((acc, f) => acc + f.size, 0), [files]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      // FIX: Explicitly cast Array.from(e.target.files) to File[] to fix 'unknown' type errors during reduction and iteration.
+      const selected = Array.from(e.target.files) as File[];
+      const total = selected.reduce((acc, f) => acc + f.size, 0);
+      
+      if (total > MAX_INPUT_SIZE_BYTES) {
+        setError(t.errorInputTooLarge || "Total file size exceeds 7 MB limit.");
+        return;
+      }
+      
+      const processed: File[] = [];
+      for (const f of selected) {
+        if (f.name.toLowerCase().endsWith('.heic')) {
+          try {
+            // FIX: Explicitly handle the return type of heic2any which can be Blob or Blob[].
+            const result = await heic2any({ blob: f, toType: 'image/jpeg', quality: 0.8 });
+            const converted = Array.isArray(result) ? result[0] : result;
+            processed.push(new File([converted], f.name.replace(/\.heic$/i, '.jpg'), { type: 'image/jpeg' }));
+          } catch (err) {
+            console.error('HEIC conversion failed', err);
+            processed.push(f);
+          }
+        } else {
+          processed.push(f);
+        }
+      }
+
+      setFiles(processed);
+      setError("");
+    }
+  };
+
+  const processFiles = async () => {
+    setIsProcessing(true);
+    setError("");
+    setProgress(10);
+    try {
+      if (type === 'img2pdf') {
+        await handleImageToPdf();
+      } else if (type === 'merge' || type === 'compress') {
+        await handlePdfMergeAndCompress();
+      }
+    } catch (err) {
+      setError(t.errorProcessingFailed || "Processing failed. Please check file formats.");
+    } finally {
+      setIsProcessing(false);
+      setProgress(0);
+    }
+  };
+
+  const handleImageToPdf = async () => {
+    let quality = 0.8;
+    let scale = 1.0;
+    let isGrayscale = false;
+    let finalBlob: Blob | null = null;
+
+    // Iterative compression logic
+    const attempt = async (q: number, s: number, gray: boolean) => {
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      for (let i = 0; i < files.length; i++) {
+        if (i > 0) doc.addPage();
+        const imgData = await fileToOptimizedDataURL(files[i], q, s, gray);
+        doc.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+      }
+      return doc.output('blob');
+    };
+
+    // Step 1: High Quality
+    finalBlob = await attempt(quality, scale, isGrayscale);
+    
+    // Iterative loop
+    const stages = [
+      { q: 0.8, s: 0.8, gray: false },
+      { q: 0.7, s: 0.7, gray: false },
+      { q: 0.6, s: 0.6, gray: false },
+      { q: 0.5, s: 0.5, gray: false },
+      { q: 0.4, s: 0.5, gray: true },
+      { q: 0.2, s: 0.4, gray: true },
+    ];
+
+    for (const stage of stages) {
+      if (finalBlob && finalBlob.size <= TARGET_SIZE_KB * 1024) break;
+      setProgress(prev => Math.min(prev + 15, 90));
+      finalBlob = await attempt(stage.q, stage.s, stage.gray);
+    }
+
+    if (finalBlob && finalBlob.size > TARGET_SIZE_KB * 1024) {
+      setError(t.errorCannotCompress || "Cannot compress under 230 KB limit. Reduce pages.");
+      return;
+    }
+
+    if (finalBlob) finish(finalBlob, "Document.pdf");
+  };
+
+  const handlePdfMergeAndCompress = async () => {
+    const mergedPdf = await PDFDocument.create();
+    for (const file of files) {
+      const pdfBytes = await file.arrayBuffer();
+      const pdf = await PDFDocument.load(pdfBytes);
+      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    }
+    
+    // First save attempt
+    let pdfBytes = await mergedPdf.save({ useObjectStreams: true });
+    let blob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+    if (blob.size > TARGET_SIZE_KB * 1024) {
+      // If still too large, we suggest the user reduces pages as client-side PDF-to-PDF pixel compression is very heavy
+      setError(t.errorCannotCompress || "File too large after merge. Try reducing pages or input quality.");
+      return;
+    }
+
+    finish(blob, "Merged_Document.pdf");
+  };
+
+  const fileToOptimizedDataURL = (file: File, quality: number, scale: number, grayscale: boolean): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          const ctx = canvas.getContext('2d')!;
+          if (grayscale) {
+            ctx.filter = 'grayscale(100%)';
+          }
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const finish = (blob: Blob, defaultName: string) => {
+    setOutputBlob({ blob, name: defaultName });
+    setNewName(defaultName);
+    const suggested = ["Income_Certificate.pdf", "Sem1_Sem2_Marksheet.pdf", "Declaration_RationCard.pdf"];
+    if (type === 'img2pdf') setNewName(suggested[1]);
+  };
+
+  const download = () => {
+    if (!outputBlob) return;
+    const url = URL.createObjectURL(outputBlob.blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = newName.endsWith('.pdf') ? newName : `${newName}.pdf`;
+    a.click();
+    
+    // Self-destruct logic: Clear state after download or close
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 5000);
+    onClose();
+  };
+
+  // Auto-suggest names mapping
+  const suggestedNames = [
+    "Income_Certificate.pdf",
+    "Sem1_Sem2_Marksheet.pdf",
+    "Declaration_RationCard.pdf",
+    "Domicile_Certificate.pdf",
+    "Admission_Receipt.pdf"
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div className="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-3xl overflow-hidden shadow-2xl animate-in slide-in-from-bottom flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+        <header className="bg-blue-900 p-6 text-white flex justify-between items-center">
+          <div>
+            <h3 className="font-black text-sm uppercase tracking-widest">{type === 'merge' ? t.btnMerge : type === 'compress' ? t.btnCompress : t.btnImgToPdf}</h3>
+            <p className="text-[10px] text-blue-300 font-bold uppercase mt-1">{t.strictTarget || "Strict Target: 230 KB"}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
+        </header>
+
+        <div className="p-8 space-y-6 overflow-y-auto">
+          {!outputBlob ? (
+            <div className="space-y-6">
+              <div className="border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center hover:border-blue-300 transition-colors relative">
+                <input type="file" multiple={type !== 'compress'} accept={type === 'img2pdf' ? 'image/*,.heic' : 'application/pdf'} onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                <div className="space-y-3">
+                  <div className="mx-auto w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                  </div>
+                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.selectLabel || "Select Files"} ({t.max7mb || "Max 7MB"})</p>
+                </div>
+              </div>
+
+              {files.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.selectedLabel || "Selected"} ({files.length})</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{(totalInputSize / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <div className="max-h-24 overflow-y-auto space-y-1 pr-2">
+                    {files.map((f, i) => (
+                      <div key={i} className="text-[10px] font-bold text-slate-600 bg-slate-50 p-2 rounded-lg truncate flex justify-between">
+                        <span>{f.name}</span>
+                        <span className="opacity-40">{(f.size / 1024).toFixed(0)} KB</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {error && <div className="p-4 bg-red-50 text-red-600 text-[10px] font-bold rounded-xl border border-red-100 leading-relaxed">{error}</div>}
+
+              {isProcessing && (
+                <div className="space-y-2">
+                  <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-600 transition-all duration-300" style={{ width: `${progress}%` }} />
+                  </div>
+                  <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest text-center animate-pulse">{t.optimizingSize || "Optimizing size..."}</p>
+                </div>
+              )}
+
+              <button 
+                disabled={files.length === 0 || isProcessing} 
+                onClick={processFiles}
+                className="w-full bg-blue-900 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-[11px] shadow-lg shadow-blue-900/10 disabled:opacity-20 transition-all h-14"
+              >
+                {isProcessing ? t.processing || 'Processing...' : t.createPdf || 'Create Optimized PDF'}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6 animate-in zoom-in-95 duration-300">
+              <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-3xl text-center space-y-3">
+                <div className="mx-auto w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <div>
+                  <h4 className="font-black text-emerald-900 uppercase tracking-tight">{t.pdfReady || "Your PDF is ready"}</h4>
+                  <p className="text-[10px] text-emerald-600 font-black uppercase mt-1">{(outputBlob.blob.size / 1024).toFixed(1)} KB • {t.safeSize || "SAFE SIZE"}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.renameLabel || "Rename File"}</label>
+                <input 
+                  type="text" 
+                  value={newName} 
+                  onChange={e => setNewName(e.target.value)}
+                  className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-900/10 transition-all"
+                />
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {suggestedNames.slice(0, 3).map(name => (
+                    <button 
+                      key={name} 
+                      onClick={() => setNewName(name)}
+                      className="px-2 py-1 bg-slate-100 text-slate-500 text-[8px] font-bold rounded-lg uppercase hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                    >
+                      {name.split('_')[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={download} className="w-full bg-blue-900 text-white font-black py-4 rounded-2xl uppercase tracking-widest text-[11px] shadow-xl shadow-blue-900/10 h-14">{t.downloadPdf || "Download PDF"}</button>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter text-center">{t.autoDeleteNote || "Files are automatically deleted after 5 minutes."}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- REST OF COMPONENTS REMAIN SAME ---
 
 const StepStream: React.FC<{ selected: Stream | null; onSelect: (s: Stream) => void; t: any; }> = ({ selected, onSelect, t }) => {
   const streams = [
@@ -385,7 +686,7 @@ const DeclarationCard: React.FC<{ title: string; instruction: string; fileName: 
   </div>
 );
 
-const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBack: () => void; onOpenVideo: (title: string, desc: string, url?: string) => void; t: any; }> = ({ state, onRestart, onBack, onOpenVideo, t }) => {
+const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBack: () => void; onOpenVideo: (title: string, desc: string, url?: string) => void; onOpenTool: (type: 'merge' | 'compress' | 'img2pdf') => void; t: any; }> = ({ state, onRestart, onBack, onOpenVideo, onOpenTool, t }) => {
   const isFresh = state.currentYear === 1;
   const isDPharm = state.courseType === CourseType.DPharm;
   const isASC = state.stream === Stream.ASC;
@@ -455,7 +756,6 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       if (isProfessional) {
         if (['OBC', 'SEBC', 'SBC', 'VJNT'].includes(state.category!)) docs.push({ name: t.docNCL, badge: 'ifavailable' });
       }
-      // Caste Validity logic: Mandatory for MBA, MCom, MSc, MCA; Optional for all others.
       const validityMandatoryCourses = [CourseType.MBA, CourseType.MCA, CourseType.MSc, CourseType.MCom];
       const isMandatory = validityMandatoryCourses.includes(state.courseType!);
       docs.push({ name: t.docCasteValidity, badge: isMandatory ? 'mandatory' : 'ifavailable' });
@@ -607,8 +907,15 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       <section className="space-y-6 pt-10 border-t border-slate-100 no-print">
         <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight">{t.docToolsTitle}</h3>
         <div className="grid grid-cols-1 gap-3">
-          {[{ label: t.btnMerge, sub: t.helperMerge, url: 'https://www.ilovepdf.com/merge_pdf' }, { label: t.btnCompress, sub: t.helperCompress, url: 'https://www.ilovepdf.com/compress_pdf' }, { label: t.btnImgToPdf, sub: t.helperImgToPdf, url: 'https://www.ilovepdf.com/jpg_to_pdf' }].map((tool, i) => (
-            <a key={i} href={tool.url} target="_blank" rel="noopener noreferrer" className="p-5 rounded-2xl border border-slate-100 hover:border-blue-300 hover:bg-white bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] active:scale-[0.98] transition-all flex flex-col group"><span className="font-black text-[11px] uppercase tracking-widest text-slate-800 group-hover:text-blue-900 transition-colors">{tool.label}</span><span className="text-[9px] font-bold text-slate-400 mt-2 group-hover:text-slate-500 transition-colors">{tool.sub}</span></a>
+          {[
+            { id: 'merge', label: t.btnMerge, sub: t.helperMerge, type: 'merge' },
+            { id: 'compress', label: t.btnCompress, sub: t.helperCompress, type: 'compress' },
+            { id: 'img2pdf', label: t.btnImgToPdf, sub: t.helperImgToPdf, type: 'img2pdf' }
+          ].map((tool, i) => (
+            <button key={i} onClick={() => onOpenTool(tool.type as any)} className="p-5 rounded-2xl border border-slate-100 hover:border-blue-300 hover:bg-white bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] active:scale-[0.98] transition-all flex flex-col group text-left">
+              <span className="font-black text-[11px] uppercase tracking-widest text-slate-800 group-hover:text-blue-900 transition-colors">{tool.label}</span>
+              <span className="text-[9px] font-bold text-slate-400 mt-2 group-hover:text-slate-500 transition-colors">{tool.sub}</span>
+            </button>
           ))}
         </div>
       </section>
