@@ -7,9 +7,9 @@ export enum Stream {
 }
 
 export enum CourseType {
-  BPharm = 'B-Pharmacy',
-  DPharm = 'D-Pharmacy',
-  MPharm = 'M-Pharmacy',
+  BPharm = 'B.Pharmacy',
+  DPharm = 'D.Pharmacy',
+  MPharm = 'M.Pharmacy',
   MBA = 'MBA',
   MCA = 'MCA',
   BBA = 'BBA',
@@ -35,7 +35,7 @@ export interface AppState {
   currentYear: number | null;
   isHosteller: boolean;
   hadGap: boolean;
-  isDirectSecondYear: boolean | null;
+  isDirectSecondYear: boolean;
   loginReady: {
     username: boolean;
     password: boolean;
