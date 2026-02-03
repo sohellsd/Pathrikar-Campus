@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { Stream, CourseType, Category, AppState, Language } from './types';
 import { StreamIcons } from './constants';
 import { translations } from './translations';
@@ -579,6 +580,7 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       </section>
 
       <button onClick={onRestart} className="w-full bg-blue-900 text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.3em] text-[11px] mt-6 transition-all hover:bg-blue-800 h-16 no-print">{t.home}</button>
+      <Analytics />
     </div>
   );
 };
