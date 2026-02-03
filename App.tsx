@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Stream, CourseType, Category, AppState, Language } from './types';
@@ -201,7 +200,7 @@ const App: React.FC = () => {
   );
 };
 
-// Fixing block-scoped redeclaration errors by defining helpers once
+// Component Definitions
 
 const StepStream: React.FC<{ selected: Stream | null; onSelect: (s: Stream) => void; t: any; }> = ({ selected, onSelect, t }) => {
   const streams = [
@@ -418,25 +417,36 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       }
       if (state.hadGap) docs.push({ name: 'Gap Certificate', badge: 'onepdf' });
     } else {
+      // RENEWAL / 2ND YEAR+
       if (isDPharm) { 
         docs.push({ name: '1st Year Marksheet', badge: 'onepdf' }); 
       } else if (!isASC) {
-        if (state.currentYear === 2) {
-          if (state.isDirectSecondYear) {
+        // UNIVERSAL RULE FOR SEMESTER-BASED (Engineering, Pharmacy, Management)
+        if (state.currentYear && state.currentYear >= 2) {
+          
+          // Special Case: B.Pharmacy 2nd Year Direct Admission (Diploma Holder)
+          const isDSYCase = state.courseType === CourseType.BPharm && state.currentYear === 2 && state.isDirectSecondYear;
+          
+          if (isDSYCase) {
             docs.push({ name: t.docDiplomaMarksheet, badge: 'onepdf', fileName: 'Diploma_2nd_Year_Marksheet.pdf' });
           } else {
-            docs.push({ name: '1st Year Marksheet (Sem 1 + Sem 2)', badge: 'merge', fileName: 'Sem1_Sem2_Marksheet.pdf' });
+            // Standard Cumulative Rule: Higher years MUST include all previous academic year marksheets
+            if (state.currentYear >= 2) {
+              docs.push({ name: '1st Year Marksheet (Sem 1 + Sem 2)', badge: 'merge', fileName: 'Sem1_Sem2_Marksheet.pdf' });
+            }
+            if (state.currentYear >= 3) {
+              docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge', fileName: 'Sem3_Sem4_Marksheet.pdf' });
+            }
+            if (state.currentYear >= 4) {
+              docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge', fileName: 'Sem5_Sem6_Marksheet.pdf' });
+            }
           }
-        } else if (state.currentYear === 3) {
-          docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge', fileName: 'Sem3_Sem4_Marksheet.pdf' });
-        } else if (state.currentYear === 4) {
-          docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge', fileName: 'Sem5_Sem6_Marksheet.pdf' });
         }
       }
       docs.push({ name: isMaster ? t.docGradTC : 'Previous College TC / Leaving Certificate' });
     }
     return docs;
-  }, [isASC, isFresh, isMaster, isDPharm, state.currentYear, state.hadGap, state.category, state.isDirectSecondYear, t]);
+  }, [isASC, isFresh, isMaster, isDPharm, state.currentYear, state.hadGap, state.category, state.isDirectSecondYear, state.courseType, t]);
 
   const govtDocs = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
