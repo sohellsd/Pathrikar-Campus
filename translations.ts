@@ -120,6 +120,9 @@ export const translations = {
     docHostelBond: "Hostel Bond + Owner’s Tax Receipt",
     directSecondYearQuestion: "Are you a Direct Second Year B.Pharmacy student (admitted after Diploma)?",
     docDiplomaMarksheet: "Diploma 2nd Year Marksheet",
+    shareWhatsApp: "📲 Share Document Checklist on WhatsApp",
+    waChecklistHeader: "📄 Scholarship Document Checklist",
+    waGeneratedBy: "Generated using Pathrikar Campus Scholarship Assistance Tool",
   },
   hi: {
     title: "Pathrikar Campus",
@@ -241,6 +244,9 @@ export const translations = {
     docHostelBond: "हॉस्टल बॉन्ड + मालिक की टैक्स रसीद",
     directSecondYearQuestion: "क्या आपने डिप्लोमा के बाद B.Pharmacy के दूसरे वर्ष में प्रवेश लिया है?",
     docDiplomaMarksheet: "Diploma 2nd Year Marksheet",
+    shareWhatsApp: "📲 व्हाट्सएप पर दस्तावेज़ चेकलिस्ट शेयर करें",
+    waChecklistHeader: "📄 छात्रवृत्ति दस्तावेज़ चेकलिस्ट",
+    waGeneratedBy: "Pathrikar Campus छात्रवृत्ति सहायता टूल का उपयोग करके बनाया गया",
   },
   mr: {
     title: "Pathrikar Campus",
@@ -362,5 +368,8 @@ export const translations = {
     docHostelBond: "हॉस्टेल बॉन्ड + मालकाची टॅक्स पावती",
     directSecondYearQuestion: "तुम्ही डिप्लोमानंतर B.Pharmacy च्या थेट द्वितीय वर्षात प्रवेश घेतला आहे का?",
     docDiplomaMarksheet: "Diploma 2nd Year Marksheet",
+    shareWhatsApp: "📲 व्हॉट्सअॅपवर कागदपत्रे चेकलिस्ट शेअर करा",
+    waChecklistHeader: "📄 शिष्यवृत्ती कागदपत्रे चेकलिस्ट",
+    waGeneratedBy: "Pathrikar Campus शिष्यवृत्ती सहाय्यक टूल वापरून तयार केले",
   }
 };

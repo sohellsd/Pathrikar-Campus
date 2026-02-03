@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Stream, CourseType, Category, AppState, Language } from './types';
@@ -6,7 +7,7 @@ import { translations } from './translations';
 
 const PERSISTENCE_KEY = 'mahadbt_assist_state_v4';
 
-// Define strict types for documents to fix TS2322 build error
+// Strict TypeScript definitions for document structures
 type BadgeType = 'merge' | 'onepdf' | 'optional' | 'ifavailable' | 'anyone' | 'mandatory';
 
 interface DocItem {
@@ -200,7 +201,7 @@ const App: React.FC = () => {
   );
 };
 
-// Component Definitions
+// Internal Step Components
 
 const StepStream: React.FC<{ selected: Stream | null; onSelect: (s: Stream) => void; t: any; }> = ({ selected, onSelect, t }) => {
   const streams = [
@@ -321,6 +322,8 @@ const StepLoginCheck: React.FC<{ ready: AppState['loginReady']; onToggle: (f: ke
   );
 };
 
+// Reusable Document Components
+
 const DocBadge: React.FC<{ type: BadgeType; isPrint?: boolean }> = ({ type, isPrint }) => {
   const config = {
     merge: { text: 'MERGE REQUIRED', colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
@@ -377,6 +380,7 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
   const [shouldAnimate, setShouldAnimate] = useState(true);
   const printBtnRef = useRef<HTMLButtonElement>(null);
 
+  // Stop animation on scroll past OR user interaction
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -387,11 +391,19 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       { threshold: 0 }
     );
 
-    if (printBtnRef.current) {
-      observer.observe(printBtnRef.current);
-    }
+    if (printBtnRef.current) observer.observe(printBtnRef.current);
 
-    return () => observer.disconnect();
+    const stopAnimation = () => setShouldAnimate(false);
+    window.addEventListener('scroll', stopAnimation, { once: true });
+    window.addEventListener('touchstart', stopAnimation, { once: true });
+    window.addEventListener('mousedown', stopAnimation, { once: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', stopAnimation);
+      window.removeEventListener('touchstart', stopAnimation);
+      window.removeEventListener('mousedown', stopAnimation);
+    };
   }, []);
 
   const academicDocs = useMemo<DocItem[]>(() => {
@@ -420,27 +432,32 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       // RENEWAL / 2ND YEAR+
       if (isDPharm) { 
         docs.push({ name: '1st Year Marksheet', badge: 'onepdf' }); 
-      } else if (!isASC) {
-        // UNIVERSAL RULE FOR SEMESTER-BASED (Engineering, Pharmacy, Management)
-        if (state.currentYear && state.currentYear >= 2) {
-          
-          // Special Case: B.Pharmacy 2nd Year Direct Admission (Diploma Holder)
-          const isDSYCase = state.courseType === CourseType.BPharm && state.currentYear === 2 && state.isDirectSecondYear;
-          
-          if (isDSYCase) {
+      } else {
+        // CUMULATIVE MARKSHEET LOGIC FOR SEMESTER-BASED (Engineering, Pharmacy, Management, ASC)
+        const isBPharmDSY = state.courseType === CourseType.BPharm && state.isDirectSecondYear;
+
+        if (isBPharmDSY) {
+            // Direct Second Year students always need Diploma Marksheet instead of Degree Sem 1+2
             docs.push({ name: t.docDiplomaMarksheet, badge: 'onepdf', fileName: 'Diploma_2nd_Year_Marksheet.pdf' });
-          } else {
-            // Standard Cumulative Rule: Higher years MUST include all previous academic year marksheets
-            if (state.currentYear >= 2) {
-              docs.push({ name: '1st Year Marksheet (Sem 1 + Sem 2)', badge: 'merge', fileName: 'Sem1_Sem2_Marksheet.pdf' });
-            }
-            if (state.currentYear >= 3) {
+            
+            // PLUS any degree years completed so far
+            if (state.currentYear && state.currentYear >= 3) {
               docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge', fileName: 'Sem3_Sem4_Marksheet.pdf' });
             }
-            if (state.currentYear >= 4) {
+            if (state.currentYear && state.currentYear >= 4) {
               docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge', fileName: 'Sem5_Sem6_Marksheet.pdf' });
             }
-          }
+        } else {
+            // Standard Regular Path - Cumulative Rule
+            if (state.currentYear && state.currentYear >= 2) {
+                docs.push({ name: '1st Year Marksheet (Sem 1 + Sem 2)', badge: 'merge', fileName: 'Sem1_Sem2_Marksheet.pdf' });
+            }
+            if (state.currentYear && state.currentYear >= 3) {
+                docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge', fileName: 'Sem3_Sem4_Marksheet.pdf' });
+            }
+            if (state.currentYear && state.currentYear >= 4) {
+                docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge', fileName: 'Sem5_Sem6_Marksheet.pdf' });
+            }
         }
       }
       docs.push({ name: isMaster ? t.docGradTC : 'Previous College TC / Leaving Certificate' });
@@ -513,6 +530,50 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     window.print();
   };
 
+  const handleShareOnWhatsApp = () => {
+    const mode = isFresh ? t.freshApp : t.renewalApp;
+    const yearSuffix = state.currentYear === 1 ? 'st' : state.currentYear === 2 ? 'nd' : state.currentYear === 3 ? 'rd' : 'th';
+    const hostelStatus = state.isHosteller ? t.yes : t.no;
+
+    let message = `*${t.waChecklistHeader}*\n\n`;
+    message += `🎓 *Course:* ${state.courseType || state.stream}\n`;
+    message += `📅 *Year:* ${state.currentYear}${yearSuffix} Year\n`;
+    message += `🏷️ *Category:* ${state.category}\n`;
+    message += `📝 *Mode:* ${mode}\n`;
+    if (state.stream !== Stream.ASC) {
+      message += `🏠 *Hosteller:* ${hostelStatus}\n`;
+    }
+    message += `\n`;
+
+    if (declarationForms && declarationForms.length > 0) {
+      message += `✅ *Declaration Documents:*\n`;
+      declarationForms.forEach(d => message += `• ${d.title}\n`);
+      message += `\n`;
+    }
+
+    message += `✅ *${t.academicDocs}:*\n`;
+    academicDocs.forEach(d => message += `• ${d.name}\n`);
+    message += `\n`;
+
+    message += `✅ *${t.categoryDocs}:*\n`;
+    govtDocs.forEach(d => message += `• ${d.name}\n`);
+    if (choiceDocs) {
+      choiceDocs.forEach(d => message += `• ${d} (Any One)\n`);
+    }
+    message += `\n`;
+
+    if (hostelDocsList.length > 0) {
+      message += `✅ *${t.hostelDocs}:*\n`;
+      hostelDocsList.forEach(d => message += `• ${d.name}\n`);
+      message += `\n`;
+    }
+
+    message += `_${t.waGeneratedBy}_`;
+
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+  };
+
   const printArea = document.getElementById('print-area');
 
   return (
@@ -578,7 +639,18 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
         </div>
       </section>
 
-      <button onClick={onRestart} className="w-full bg-blue-900 text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.3em] text-[11px] mt-6 transition-all hover:bg-blue-800 h-16 no-print">{t.home}</button>
+      <div className="space-y-3 mt-6 no-print">
+        <button 
+          onClick={handleShareOnWhatsApp} 
+          className="w-full bg-[#25D366] text-white font-black py-5 rounded-2xl shadow-xl shadow-green-900/10 active:scale-[0.98] uppercase tracking-[0.1em] text-[11px] flex items-center justify-center space-x-3 transition-all hover:bg-[#128C7E] h-16"
+        >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 448 512">
+            <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-5.5-2.8-23.2-8.5-44.2-27.1-16.4-14.6-27.4-32.7-30.6-38.2-3.2-5.6-.3-8.6 2.5-11.3 2.5-2.5 5.5-6.5 8.3-9.7 2.8-3.3 3.7-5.6 5.6-9.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 13.2 5.8 23.5 9.2 31.5 11.8 13.3 4.2 25.4 3.6 35 2.2 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+          </svg>
+          <span>{t.shareWhatsApp}</span>
+        </button>
+        <button onClick={onRestart} className="w-full bg-blue-900 text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.3em] text-[11px] transition-all hover:bg-blue-800 h-16">{t.home}</button>
+      </div>
     </div>
   );
 };
