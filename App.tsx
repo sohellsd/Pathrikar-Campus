@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Stream, CourseType, Category, AppState, Language } from './types';
@@ -5,6 +6,15 @@ import { StreamIcons } from './constants';
 import { translations } from './translations';
 
 const PERSISTENCE_KEY = 'mahadbt_assist_state_v4';
+
+// Define strict types for documents to fix TS2322 build error
+type BadgeType = 'merge' | 'onepdf' | 'optional' | 'ifavailable' | 'anyone' | 'mandatory';
+
+interface DocItem {
+  name: string;
+  badge?: BadgeType;
+  fileName?: string;
+}
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
@@ -191,6 +201,8 @@ const App: React.FC = () => {
   );
 };
 
+// Fixing block-scoped redeclaration errors by defining helpers once
+
 const StepStream: React.FC<{ selected: Stream | null; onSelect: (s: Stream) => void; t: any; }> = ({ selected, onSelect, t }) => {
   const streams = [
     { value: Stream.Engineering, label: t.engLabel, tip: t.engTip },
@@ -310,7 +322,7 @@ const StepLoginCheck: React.FC<{ ready: AppState['loginReady']; onToggle: (f: ke
   );
 };
 
-const DocBadge: React.FC<{ type: 'merge' | 'onepdf' | 'optional' | 'ifavailable' | 'anyone' | 'mandatory'; isPrint?: boolean }> = ({ type, isPrint }) => {
+const DocBadge: React.FC<{ type: BadgeType; isPrint?: boolean }> = ({ type, isPrint }) => {
   const config = {
     merge: { text: 'MERGE REQUIRED', colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
     onepdf: { text: 'ONE PDF', colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
@@ -383,8 +395,8 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     return () => observer.disconnect();
   }, []);
 
-  const academicDocs = useMemo(() => {
-    const docs: { name: string; badge?: any; fileName?: string }[] = [];
+  const academicDocs = useMemo<DocItem[]>(() => {
+    const docs: DocItem[] = [];
     
     const isReservedCat = ['SC', 'ST', 'SBC', 'VJNT'].includes(state.category || '');
     if (isReservedCat) {
@@ -406,12 +418,10 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       }
       if (state.hadGap) docs.push({ name: 'Gap Certificate', badge: 'onepdf' });
     } else {
-      // RENEWAL / 2ND YEAR+
       if (isDPharm) { 
         docs.push({ name: '1st Year Marksheet', badge: 'onepdf' }); 
       } else if (!isASC) {
         if (state.currentYear === 2) {
-          // MUTUALLY EXCLUSIVE LOGIC FOR B.PHARMACY DIPLOMA HOLDERS
           if (state.isDirectSecondYear) {
             docs.push({ name: t.docDiplomaMarksheet, badge: 'onepdf', fileName: 'Diploma_2nd_Year_Marksheet.pdf' });
           } else {
@@ -428,8 +438,8 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     return docs;
   }, [isASC, isFresh, isMaster, isDPharm, state.currentYear, state.hadGap, state.category, state.isDirectSecondYear, t]);
 
-  const govtDocs = useMemo(() => {
-    const docs: { name: string; badge?: any }[] = [];
+  const govtDocs = useMemo<DocItem[]>(() => {
+    const docs: DocItem[] = [];
     docs.push({ name: 'Aadhaar Card' });
     const incomeRequired = isFresh || ['Open', 'SEBC', 'Minority'].includes(state.category!);
     if (incomeRequired) docs.push({ name: 'Income Certificate' });
@@ -454,7 +464,7 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     return docs;
   }, [isFresh, isASC, state.category, state.courseType, t]);
 
-  const hostelDocsList = useMemo(() => {
+  const hostelDocsList = useMemo<DocItem[]>(() => {
     const isHostelEligibleCategory = state.category && ['Open', 'SC', 'ST', 'SBC', 'VJNT'].includes(state.category);
     if (state.isHosteller && !isASC && isHostelEligibleCategory) {
       return [{ name: t.docHostelBond, badge: 'merge', fileName: 'Hostel_Bond_Tax_Receipt.pdf' }];
@@ -541,9 +551,9 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
 
       <div className="space-y-12 no-print">
         {declarationForms && <section className="space-y-5 text-left"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">Declaration Documents</p><div className="space-y-3">{declarationForms.map((decl, idx) => (<DeclarationCard key={idx} {...decl} downloadLabel={t.downloadForm} />))}</div></section>}
-        <section className="space-y-5 text-left"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.academicDocs}</p><div className="space-y-3">{academicDocs.map((doc: any, idx) => (<div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group flex flex-col min-w-0"><h4 className="font-black text-slate-700 text-[12px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4>{doc.fileName && <span className="text-[9px] font-bold text-blue-600/60 block mt-1 lowercase italic">File: {doc.fileName}</span>}</div>))}</div></section>
+        <section className="space-y-5 text-left"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.academicDocs}</p><div className="space-y-3">{academicDocs.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group flex flex-col min-w-0"><h4 className="font-black text-slate-700 text-[12px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4>{doc.fileName && <span className="text-[9px] font-bold text-blue-600/60 block mt-1 lowercase italic">File: {doc.fileName}</span>}</div>))}</div></section>
         <section className="space-y-5 text-left"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.categoryDocs}</p><div className="space-y-3">{govtDocs.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group flex items-start justify-between min-w-0"><h4 className="font-black text-slate-700 text-[12px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4></div>))}{choiceDocs && <div className="bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100 space-y-4 mt-4"><div className="flex flex-col space-y-1"><span className="text-[9px] font-black text-emerald-700 uppercase tracking-tight">ANY ONE REQUIRED</span></div><div className="space-y-2">{choiceDocs.map((name, idx) => (<div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-start justify-between group min-w-0"><h4 className="font-black text-slate-800 text-[12px] leading-relaxed uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow flex items-center">{name}<DocBadge type="anyone" /></h4></div>))}</div></div>}</div></section>
-        {hostelDocsList.length > 0 && <section className="space-y-5 text-left"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.hostelDocs}</p><div className="space-y-3">{hostelDocsList.map((doc: any, idx) => (<div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group flex flex-col min-w-0"><h4 className="font-black text-slate-700 text-[12px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4>{doc.fileName && <span className="text-[9px] font-bold text-blue-600/60 block mt-1 lowercase italic">File: {doc.fileName}</span>}</div>))}</div></section>}
+        {hostelDocsList.length > 0 && <section className="space-y-5 text-left"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.hostelDocs}</p><div className="space-y-3">{hostelDocsList.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group flex flex-col min-w-0"><h4 className="font-black text-slate-700 text-[12px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4>{doc.fileName && <span className="text-[9px] font-bold text-blue-600/60 block mt-1 lowercase italic">File: {doc.fileName}</span>}</div>))}</div></section>}
       </div>
 
       <section className="space-y-6 pt-10 border-t border-slate-100 no-print text-left">
