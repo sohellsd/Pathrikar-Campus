@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Stream, CourseType, Category, AppState, Language } from './types';
@@ -140,24 +139,25 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <header className="bg-[#1e3a8a] text-white pt-10 pb-12 px-6 sticky top-0 z-40 pt-safe no-select shadow-xl rounded-b-[2rem] no-print">
+      <header className="bg-[#1e3a8a] text-white pt-4 pb-10 px-6 sticky top-0 z-40 pt-safe no-select shadow-xl rounded-b-3xl no-print">
         <div className="max-w-2xl mx-auto flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex flex-col text-left">
-              <h1 className="font-black text-2xl tracking-tighter leading-none uppercase">Pathrikar Campus</h1>
-              <p className="text-[10px] font-bold text-blue-200/60 uppercase tracking-widest mt-2">{t.subtitle}</p>
-            </div>
-            <div className="flex bg-blue-900/50 p-1.5 rounded-2xl backdrop-blur-md border border-white/10">
+          <div className="flex items-center justify-between mb-4 min-h-[40px]">
+            <div className="w-1" />
+            <div className="flex bg-blue-900/50 p-1 rounded-2xl backdrop-blur-md border border-white/10">
               {(['en', 'hi', 'mr'] as Language[]).map(lang => (
-                <button key={lang} onClick={() => setState(prev => ({ ...prev, language: lang }))} className={`px-3 py-1.5 text-[10px] font-black rounded-xl transition-all duration-300 ${state.language === lang ? 'bg-white text-blue-900 shadow-lg' : 'text-blue-200/50 hover:text-white'}`}>
+                <button key={lang} onClick={() => setState(prev => ({ ...prev, language: lang }))} className={`px-3 py-1 text-[10px] font-black rounded-xl transition-all duration-300 ${state.language === lang ? 'bg-white text-blue-900 shadow-lg' : 'text-blue-200/50 hover:text-white'}`}>
                   {lang === 'en' ? 'EN' : lang === 'hi' ? 'हिं' : 'मराठी'}
                 </button>
               ))}
             </div>
           </div>
-          <div className="flex flex-col items-end space-y-2">
-            <span className="text-[9px] font-black text-white uppercase tracking-widest">{t.step} {state.step} {t.of} 6</span>
-            <div className="flex w-full space-x-2">
+          <div className="flex flex-col text-left mb-6">
+            <h1 className="font-black text-xl tracking-tighter leading-none uppercase">Pathrikar Campus</h1>
+            <p className="text-[9px] font-bold text-blue-200/50 uppercase tracking-widest mt-1.5">{t.subtitle}</p>
+          </div>
+          <div className="flex flex-col items-end space-y-1.5">
+            <span className="text-[8px] font-black text-white uppercase tracking-widest leading-none">{t.step} {state.step} {t.of} 6</span>
+            <div className="flex w-full space-x-1.5">
               {[1, 2, 3, 4, 5, 6].map(i => (
                 <div key={i} className={`h-[3px] flex-grow rounded-full transition-all duration-500 ${state.step >= i ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'bg-blue-400/30'}`} />
               ))}
@@ -166,18 +166,21 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto relative z-30 flex-grow w-full -mt-6 px-0 sm:px-4">
-        <div className="bg-white min-h-[500px] p-6 pt-8 rounded-t-[2.5rem] sm:rounded-3xl border-x border-t border-slate-100 overflow-hidden pb-12 shadow-[0_-10px_20px_rgba(0,0,0,0.02)] step-container">
-          {state.step > 1 && (
-            <button onClick={prevStep} className="mb-8 flex items-center space-x-2 text-slate-400 hover:text-blue-600 font-bold text-[10px] uppercase tracking-widest transition-all touch-manipulation group no-print">
-              <div className="p-2.5 bg-slate-50 rounded-xl group-hover:bg-blue-50 transition-colors">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </div>
-              <span className="group-hover:translate-x-0.5 transition-transform">{t.back}</span>
-            </button>
-          )}
-
+      <main className="max-w-2xl mx-auto relative z-30 flex-grow w-full -mt-4 px-0 sm:px-4">
+        <div className="bg-white min-h-[500px] p-6 pt-6 rounded-t-3xl sm:rounded-3xl border-x border-t border-slate-100 overflow-hidden pb-12 shadow-[0_-10px_20px_rgba(0,0,0,0.02)] step-container">
           <div className="step-enter">
+            {state.step > 1 && (
+              <button 
+                onClick={prevStep} 
+                className="flex items-center space-x-1 text-slate-400 hover:text-blue-900 transition-all mb-4 active:translate-x-[-2px] group py-1 pr-4 rounded-lg"
+                style={{ minHeight: '32px' }}
+              >
+                <svg className="w-4 h-4 transition-transform group-hover:translate-x-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M15 19l-7-7 7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span className="font-bold text-[10px] uppercase tracking-widest">Go {t.back}</span>
+              </button>
+            )}
             {state.step === 1 && <StepStream selected={state.stream} onSelect={handleStreamSelect} t={t} />}
             {state.step === 2 && <StepCourse selected={state.courseType} stream={state.stream} onSelect={handleCourseSelect} t={t} />}
             {state.step === 3 && <StepCategory selected={state.category} onSelect={handleCategorySelect} t={t} />}
@@ -212,16 +215,16 @@ const StepStream: React.FC<{ selected: Stream | null; onSelect: (s: Stream) => v
     { value: Stream.ASC, label: t.ascLabel, tip: t.ascTip },
   ];
   return (
-    <div className="space-y-8">
-      <header className="space-y-2 text-left">
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{t.selectStream}</h2>
-        <p className="text-slate-500 font-medium text-sm leading-relaxed">{t.selectStreamSub}</p>
+    <div className="space-y-6">
+      <header className="space-y-1.5 text-left">
+        <h2 className="text-xl font-black text-slate-900 tracking-tight leading-tight">{t.selectStream}</h2>
+        <p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectStreamSub}</p>
       </header>
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {streams.map(s => (
-          <button key={s.value} onClick={() => onSelect(s.value)} className={`w-full flex items-center p-4 rounded-2xl border-2 transition-all active:scale-[0.98] text-left relative ${selected === s.value ? 'border-blue-600 bg-blue-50/30' : 'border-slate-50 bg-[#fafafa] hover:border-slate-200'}`}>
-            <div className={`p-3.5 rounded-xl transition-all ${selected === s.value ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-300'}`}>{StreamIcons[s.value as keyof typeof StreamIcons]}</div>
-            <div className="ml-4 flex-grow"><span className={`font-black text-[15px] tracking-tight block ${selected === s.value ? 'text-blue-900' : 'text-slate-700'}`}>{s.label}</span><span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{s.tip}</span></div>
+          <button key={s.value} onClick={() => onSelect(s.value)} className={`w-full flex items-center p-3.5 rounded-xl border-2 transition-all active:scale-[0.98] text-left relative ${selected === s.value ? 'border-blue-600 bg-blue-50/30' : 'border-slate-50 bg-[#fafafa] hover:border-slate-200'}`}>
+            <div className={`p-2.5 rounded-lg transition-all ${selected === s.value ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-300'}`}>{StreamIcons[s.value as keyof typeof StreamIcons]}</div>
+            <div className="ml-3.5 flex-grow"><span className={`font-black text-[14px] tracking-tight block ${selected === s.value ? 'text-blue-900' : 'text-slate-700'}`}>{s.label}</span><span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{s.tip}</span></div>
           </button>
         ))}
       </div>
@@ -235,12 +238,12 @@ const StepCourse: React.FC<{ selected: CourseType | null; stream: Stream | null;
   else if (stream === Stream.Management) options = [CourseType.BBA, CourseType.BCA, CourseType.MBA, CourseType.MCA];
   else if (stream === Stream.ASC) options = [CourseType.BA, CourseType.BSc, CourseType.BCom, CourseType.MA, CourseType.MSc, CourseType.MCom];
   return (
-    <div className="space-y-8">
-      <header className="space-y-2 text-left"><h2 className="text-2xl font-black text-slate-900 tracking-tight">{t.selectCourse}</h2><p className="text-slate-500 font-medium text-sm leading-relaxed">{t.selectCourseSub}</p></header>
-      <div className="space-y-3 no-select">{options.map(c => (
-          <button key={c} onClick={() => onSelect(c)} className={`w-full flex items-center p-5 rounded-2xl border-2 transition-all active:scale-[0.98] text-left ${selected === c ? 'border-blue-600 bg-blue-50/30' : 'border-slate-50 bg-[#fafafa]'}`}>
-            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === c ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-200' : 'border-slate-200 bg-white'}`}> {selected === c && <div className="w-2 h-2 bg-white rounded-full" />}</div>
-            <div className="ml-4"><span className={`font-black text-sm uppercase tracking-tight ${selected === c ? 'text-blue-900' : 'text-slate-700'}`}>{c}</span></div>
+    <div className="space-y-6">
+      <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.selectCourse}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectCourseSub}</p></header>
+      <div className="space-y-2.5 no-select">{options.map(c => (
+          <button key={c} onClick={() => onSelect(c)} className={`w-full flex items-center p-4 rounded-xl border-2 transition-all active:scale-[0.98] text-left ${selected === c ? 'border-blue-600 bg-blue-50/30' : 'border-slate-50 bg-[#fafafa]'}`}>
+            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === c ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-200' : 'border-slate-200 bg-white'}`}> {selected === c && <div className="w-1.5 h-1.5 bg-white rounded-full" />}</div>
+            <div className="ml-3.5"><span className={`font-black text-xs uppercase tracking-tight ${selected === c ? 'text-blue-900' : 'text-slate-700'}`}>{c}</span></div>
           </button>
         ))}</div>
     </div>
@@ -259,11 +262,11 @@ const StepCategory: React.FC<{ selected: Category | null; onSelect: (c: Category
     { label: 'Minority', value: 'Minority' },
   ];
   return (
-    <div className="space-y-8">
-      <header className="space-y-2 text-left"><h2 className="text-2xl font-black text-slate-900 tracking-tight">{t.selectCategory}</h2><p className="text-slate-500 font-medium text-sm leading-relaxed">{t.selectCategorySub}</p></header>
-      <div className="grid grid-cols-1 gap-3 no-select">{categories.map(cat => (
-          <button key={cat.value} onClick={() => onSelect(cat.value)} className={`p-5 rounded-2xl border-2 font-black transition-all text-left flex items-center justify-between active:scale-[0.98] ${selected === cat.value ? 'border-blue-600 bg-blue-50/30 text-blue-900' : 'border-slate-50 bg-[#fafafa] text-slate-600'}`}>
-            <span className="text-sm uppercase tracking-tight">{cat.label}</span>
+    <div className="space-y-6">
+      <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.selectCategory}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectCategorySub}</p></header>
+      <div className="grid grid-cols-1 gap-2.5 no-select">{categories.map(cat => (
+          <button key={cat.value} onClick={() => onSelect(cat.value)} className={`p-4 rounded-xl border-2 font-black transition-all text-left flex items-center justify-between active:scale-[0.98] ${selected === cat.value ? 'border-blue-600 bg-blue-50/30 text-blue-900' : 'border-slate-50 bg-[#fafafa] text-slate-600'}`}>
+            <span className="text-xs uppercase tracking-tight">{cat.label}</span>
           </button>
         ))}</div>
     </div>
@@ -280,18 +283,18 @@ const StepYear: React.FC<{ state: AppState; onUpdate: (updates: Partial<AppState
   const isBPharm2ndYear = state.stream === Stream.Pharmacy && state.courseType === CourseType.BPharm && state.currentYear === 2;
 
   return (
-    <div className="space-y-8">
-      <header className="space-y-2 text-left"><h2 className="text-2xl font-black text-slate-900 tracking-tight">{t.selectYear}</h2><p className="text-slate-500 font-medium text-sm leading-relaxed">{t.selectYearSub}</p></header>
-      <div className="grid grid-cols-2 gap-3 no-select">{years.map(y => (
-          <button key={y} onClick={() => onUpdate({ currentYear: y })} className={`p-5 rounded-2xl border-2 font-black text-xs uppercase transition-all active:scale-[0.97] ${state.currentYear === y ? 'border-blue-600 bg-blue-50/30 text-blue-900 shadow-md' : 'border-slate-50 bg-[#fafafa] text-slate-400'}`}>{y}{y === 1 ? 'st' : y === 2 ? 'nd' : y === 3 ? 'rd' : 'th'} Year</button>
+    <div className="space-y-6">
+      <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.selectYear}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectYearSub}</p></header>
+      <div className="grid grid-cols-2 gap-2.5 no-select">{years.map(y => (
+          <button key={y} onClick={() => onUpdate({ currentYear: y })} className={`p-4 rounded-xl border-2 font-black text-[10px] uppercase transition-all active:scale-[0.97] ${state.currentYear === y ? 'border-blue-600 bg-blue-50/30 text-blue-900 shadow-md' : 'border-slate-50 bg-[#fafafa] text-slate-400'}`}>{y}{y === 1 ? 'st' : y === 2 ? 'nd' : y === 3 ? 'rd' : 'th'} Year</button>
         ))}</div>
       
       {isBPharm2ndYear && (
-        <div className="bg-slate-50 p-6 rounded-2xl space-y-5 no-select border border-slate-200">
-          <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{t.directSecondYearQuestion}</p>
-          <div className="flex space-x-3">
+        <div className="bg-slate-50 p-5 rounded-xl space-y-4 no-select border border-slate-200">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{t.directSecondYearQuestion}</p>
+          <div className="flex space-x-2.5">
             {[true, false].map(v => (
-              <button key={v ? 'dsyy' : 'dsyn'} onClick={() => onUpdate({ isDirectSecondYear: v })} className={`flex-1 p-4 rounded-xl border-2 font-black text-[10px] transition-all uppercase ${state.isDirectSecondYear === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>
+              <button key={v ? 'dsyy' : 'dsyn'} onClick={() => onUpdate({ isDirectSecondYear: v })} className={`flex-1 p-3.5 rounded-lg border-2 font-black text-[9px] transition-all uppercase ${state.isDirectSecondYear === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>
                 {v ? t.yes : t.no}
               </button>
             ))}
@@ -299,9 +302,9 @@ const StepYear: React.FC<{ state: AppState; onUpdate: (updates: Partial<AppState
         </div>
       )}
 
-      {state.currentYear === 1 && (<div className="bg-slate-50 p-6 rounded-2xl space-y-5 no-select border border-slate-200"><p className="text-[11px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{isMaster ? t.gapQuestionPG : t.gapQuestion}</p><div className="flex space-x-3">{[true, false].map(v => (<button key={v ? 'y' : 'n'} onClick={() => onUpdate({ hadGap: v })} className={`flex-1 p-4 rounded-xl border-2 font-black text-[10px] transition-all uppercase ${state.hadGap === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>{v ? t.yes : t.no}</button>))}</div></div>)}
-      {isHostelEligible && (<div className="bg-slate-50 p-6 rounded-2xl space-y-5 no-select border border-slate-200"><p className="text-[11px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{t.hostelQuestion}</p><div className="flex space-x-3">{[true, false].map(v => (<button key={v ? 'hy' : 'hn'} onClick={() => onUpdate({ isHosteller: v })} className={`flex-1 p-4 rounded-xl border-2 font-black text-[10px] transition-all uppercase ${state.isHosteller === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>{v ? t.yes : t.no}</button>))}</div></div>)}
-      <button disabled={!state.currentYear} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/10 uppercase tracking-[0.2em] text-[11px] disabled:opacity-20 h-16">{t.continue}</button>
+      {state.currentYear === 1 && (<div className="bg-slate-50 p-5 rounded-xl space-y-4 no-select border border-slate-200"><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{isMaster ? t.gapQuestionPG : t.gapQuestion}</p><div className="flex space-x-2.5">{[true, false].map(v => (<button key={v ? 'y' : 'n'} onClick={() => onUpdate({ hadGap: v })} className={`flex-1 p-3.5 rounded-lg border-2 font-black text-[9px] transition-all uppercase ${state.hadGap === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>{v ? t.yes : t.no}</button>))}</div></div>)}
+      {isHostelEligible && (<div className="bg-slate-50 p-5 rounded-xl space-y-4 no-select border border-slate-200"><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{t.hostelQuestion}</p><div className="flex space-x-2.5">{[true, false].map(v => (<button key={v ? 'hy' : 'hn'} onClick={() => onUpdate({ isHosteller: v })} className={`flex-1 p-3.5 rounded-lg border-2 font-black text-[9px] transition-all uppercase ${state.isHosteller === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>{v ? t.yes : t.no}</button>))}</div></div>)}
+      <button disabled={!state.currentYear} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-4 rounded-xl shadow-xl shadow-blue-900/10 uppercase tracking-[0.2em] text-[10px] disabled:opacity-20 h-14">{t.continue}</button>
     </div>
   );
 };
@@ -309,20 +312,18 @@ const StepYear: React.FC<{ state: AppState; onUpdate: (updates: Partial<AppState
 const StepLoginCheck: React.FC<{ ready: AppState['loginReady']; onToggle: (f: keyof AppState['loginReady']) => void; onContinue: () => void; t: any; }> = ({ ready, onToggle, onContinue, t }) => {
   const isReady = ready.username && ready.password && ready.mobile;
   return (
-    <div className="space-y-8">
-      <header className="space-y-2 text-left"><h2 className="text-2xl font-black text-slate-900 tracking-tight">{t.loginCheck}</h2><p className="text-slate-500 font-medium text-sm leading-relaxed">{t.loginCheckSub}</p></header>
-      <div className="bg-slate-50 p-7 rounded-3xl space-y-4 no-select border border-slate-200 shadow-inner">{[ { id: 'username', label: t.loginUser }, { id: 'password', label: t.loginPass }, { id: 'mobile', label: t.loginMobile } ].map(item => (
-          <label key={item.id} className="flex items-center space-x-4 cursor-pointer active:opacity-70 group py-1">
-            <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${ready[item.id as keyof AppState['loginReady']] ? 'bg-blue-600 border-blue-600 shadow-lg' : 'bg-white border-slate-200'}`}>{ready[item.id as keyof AppState['loginReady']] && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>}</div>
-            <input type="checkbox" checked={ready[item.id as keyof AppState['loginReady']]} onChange={() => onToggle(item.id as keyof AppState['loginReady'])} className="hidden" /><span className={`text-[11px] font-black tracking-tight uppercase ${ready[item.id as keyof AppState['loginReady']] ? 'text-blue-900' : 'text-slate-400'}`}>{item.label}</span>
+    <div className="space-y-6">
+      <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.loginCheck}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.loginCheckSub}</p></header>
+      <div className="bg-slate-50 p-5 rounded-2xl space-y-3.5 no-select border border-slate-200 shadow-inner">{[ { id: 'username', label: t.loginUser }, { id: 'password', label: t.loginPass }, { id: 'mobile', label: t.loginMobile } ].map(item => (
+          <label key={item.id} className="flex items-center space-x-3.5 cursor-pointer active:opacity-70 group py-0.5">
+            <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${ready[item.id as keyof AppState['loginReady']] ? 'bg-blue-600 border-blue-600 shadow-lg' : 'bg-white border-slate-200'}`}>{ready[item.id as keyof AppState['loginReady']] && <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>}</div>
+            <input type="checkbox" checked={ready[item.id as keyof AppState['loginReady']]} onChange={() => onToggle(item.id as keyof AppState['loginReady'])} className="hidden" /><span className={`text-[10px] font-black tracking-tight uppercase ${ready[item.id as keyof AppState['loginReady']] ? 'text-blue-900' : 'text-slate-400'}`}>{item.label}</span>
           </label>
         ))}</div>
-      <button disabled={!isReady} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.2em] text-[11px] disabled:opacity-20 h-16">{t.continue}</button>
+      <button disabled={!isReady} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-4 rounded-xl shadow-xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.2em] text-[10px] disabled:opacity-20 h-14">{t.continue}</button>
     </div>
   );
 };
-
-// Reusable Document Components
 
 const DocBadge: React.FC<{ type: BadgeType; isPrint?: boolean }> = ({ type, isPrint }) => {
   const config = {
@@ -335,38 +336,38 @@ const DocBadge: React.FC<{ type: BadgeType; isPrint?: boolean }> = ({ type, isPr
   }[type];
   if (isPrint) return <span className="print-badge">[{config.text}]</span>;
   return (
-    <div className={`inline-flex items-center px-2 py-1 rounded-full border ${config.colors} whitespace-nowrap shrink-0 ml-2`}>
+    <div className={`inline-flex items-center px-2 py-0.5 rounded-full border ${config.colors} whitespace-nowrap shrink-0 ml-2`}>
       <svg className="w-2.5 h-2.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d={config.icon} /></svg>
-      <span className="text-[8px] font-black uppercase tracking-tight">{config.text}</span>
+      <span className="text-[7px] font-black uppercase tracking-tight">{config.text}</span>
     </div>
   );
 };
 
 const DeclarationCard: React.FC<{ title: string; instruction: string; fileName: string; downloadUrl: string; downloadLabel: string }> = ({ title, instruction, fileName, downloadUrl, downloadLabel }) => (
-  <div className="bg-white border border-slate-100 p-5 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-200 transition-all group flex flex-col">
-    <div className="mb-3">
-      <h4 className="font-black text-slate-800 text-[13px] leading-tight group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-4">{title}</h4>
+  <div className="bg-white border border-slate-100 p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-200 transition-all group flex flex-col">
+    <div className="mb-2.5">
+      <h4 className="font-black text-slate-800 text-[12px] leading-tight group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-4">{title}</h4>
     </div>
-    <p className="text-[10px] font-medium text-slate-400 mb-4 leading-relaxed">{instruction}</p>
+    <p className="text-[9px] font-medium text-slate-400 mb-3 leading-relaxed">{instruction}</p>
     
     <a 
       href={downloadUrl} 
       target="_blank" 
       rel="noopener noreferrer" 
-      className="inline-flex items-center space-x-2.5 px-4 py-2.5 bg-slate-50 hover:bg-blue-600 border border-slate-200 hover:border-blue-600 text-slate-700 hover:text-white rounded-xl transition-all shadow-sm active:scale-[0.97] self-start mb-5 group/btn"
+      className="inline-flex items-center space-x-2 px-3 py-2 bg-slate-50 hover:bg-blue-600 border border-slate-200 hover:border-blue-600 text-slate-700 hover:text-white rounded-lg transition-all shadow-sm active:scale-[0.97] self-start mb-4 group/btn"
       aria-label="Download declaration form PDF"
     >
-      <svg className="w-4 h-4 text-slate-400 group-hover/btn:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-3.5 h-3.5 text-slate-400 group-hover/btn:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
       </svg>
-      <span className="text-[10px] font-black uppercase tracking-widest">{downloadLabel}</span>
+      <span className="text-[9px] font-black uppercase tracking-widest">{downloadLabel}</span>
     </a>
 
-    <div className="mt-auto pt-4 border-t border-slate-50 flex flex-wrap gap-2">
-      <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-100">PDF ONLY</span>
-      <span className="text-[8px] font-black bg-slate-50 text-slate-400 px-2 py-0.5 rounded uppercase tracking-widest border border-slate-100">MAX 250 KB</span>
-      <span className="text-[8px] font-black bg-blue-50 text-blue-700 px-2 py-0.5 rounded uppercase tracking-tight border border-blue-100">ONE PDF</span>
-      <span className="text-[8px] font-black bg-blue-50 text-blue-600 px-2 py-0.5 rounded uppercase tracking-tight italic border border-blue-100">FILE: {fileName}</span>
+    <div className="mt-auto pt-3 border-t border-slate-50 flex flex-wrap gap-1.5">
+      <span className="text-[7px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-widest border border-slate-100">PDF ONLY</span>
+      <span className="text-[7px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-widest border border-slate-100">MAX 250 KB</span>
+      <span className="text-[7px] font-black bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-tight border border-blue-100">ONE PDF</span>
+      <span className="text-[7px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded uppercase tracking-tight italic border border-blue-100">FILE: {fileName}</span>
     </div>
   </div>
 );
@@ -380,7 +381,6 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
   const [shouldAnimate, setShouldAnimate] = useState(true);
   const printBtnRef = useRef<HTMLButtonElement>(null);
 
-  // Stop animation on scroll past OR user interaction
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -390,14 +390,11 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       },
       { threshold: 0 }
     );
-
     if (printBtnRef.current) observer.observe(printBtnRef.current);
-
     const stopAnimation = () => setShouldAnimate(false);
     window.addEventListener('scroll', stopAnimation, { once: true });
     window.addEventListener('touchstart', stopAnimation, { once: true });
     window.addEventListener('mousedown', stopAnimation, { once: true });
-
     return () => {
       observer.disconnect();
       window.removeEventListener('scroll', stopAnimation);
@@ -408,18 +405,15 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
 
   const academicDocs = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
-    
-    const isReservedCat = ['SC', 'ST', 'SBC', 'VJNT'].includes(state.category || '');
+    const isReservedCat = ['SC', 'ST'].includes(state.category || '');
     if (isReservedCat) {
       docs.push({ name: 'Current Admission Bonafide Certificate' });
     } else {
       docs.push({ name: 'Admission Bonafide + Fees Paid Receipt', badge: 'merge' });
     }
-    
     docs.push({ name: '10th Marksheet' });
     docs.push({ name: '12th Marksheet' });
     if (!isASC) docs.push({ name: t.docAllotment });
-
     if (isFresh) {
       if (isMaster) { 
         docs.push({ name: t.docGradMarksheet }); 
@@ -429,18 +423,12 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       }
       if (state.hadGap) docs.push({ name: 'Gap Certificate', badge: 'onepdf' });
     } else {
-      // RENEWAL / 2ND YEAR+
       if (isDPharm) { 
         docs.push({ name: '1st Year Marksheet', badge: 'onepdf' }); 
       } else {
-        // CUMULATIVE MARKSHEET LOGIC FOR SEMESTER-BASED (Engineering, Pharmacy, Management, ASC)
         const isBPharmDSY = state.courseType === CourseType.BPharm && state.isDirectSecondYear;
-
         if (isBPharmDSY) {
-            // Direct Second Year students always need Diploma Marksheet instead of Degree Sem 1+2
             docs.push({ name: t.docDiplomaMarksheet, badge: 'onepdf', fileName: 'Diploma_2nd_Year_Marksheet.pdf' });
-            
-            // PLUS any degree years completed so far
             if (state.currentYear && state.currentYear >= 3) {
               docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge', fileName: 'Sem3_Sem4_Marksheet.pdf' });
             }
@@ -448,7 +436,6 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
               docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge', fileName: 'Sem5_Sem6_Marksheet.pdf' });
             }
         } else {
-            // Standard Regular Path - Cumulative Rule
             if (state.currentYear && state.currentYear >= 2) {
                 docs.push({ name: '1st Year Marksheet (Sem 1 + Sem 2)', badge: 'merge', fileName: 'Sem1_Sem2_Marksheet.pdf' });
             }
@@ -472,20 +459,14 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     if (incomeRequired) docs.push({ name: 'Income Certificate' });
     if (state.category !== 'Open' && state.category !== 'Minority') {
       docs.push({ name: 'Caste Certificate' });
-      
       if (!isASC) {
         if (['OBC', 'SEBC', 'SBC', 'VJNT'].includes(state.category!)) {
           docs.push({ name: t.docNCL, badge: 'ifavailable' });
         }
       }
-
       const validityMandatoryCourses = [CourseType.MBA, CourseType.MCA, CourseType.MCom, CourseType.MSc];
       const isMandatory = !!(state.courseType && validityMandatoryCourses.includes(state.courseType));
-      
-      docs.push({ 
-        name: t.docCasteValidity, 
-        badge: isMandatory ? 'mandatory' : 'optional' 
-      });
+      docs.push({ name: t.docCasteValidity, badge: isMandatory ? 'mandatory' : 'optional' });
     }
     docs.push({ name: 'Domicile Certificate' });
     return docs;
@@ -504,7 +485,6 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
   const declarationForms = useMemo(() => {
     const commonDeclLink = "https://www.atharvacoe.ac.in/wp-content/uploads/Pratidnya-Patra.pdf";
     const minorityDeclLink = "https://www.mhssce.ac.in/pdf/Income_Self_declaration_minority.pdf";
-    
     if (state.category === 'Open') {
       if (state.isHosteller) {
          return [
@@ -514,11 +494,9 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       }
       return [{ title: t.declOpenTitle, instruction: t.declOpenInst, fileName: "Declaration_RationCard.pdf", downloadUrl: commonDeclLink }];
     }
-    
     if (['OBC', 'SC', 'ST', 'SBC', 'VJNT', 'SEBC'].includes(state.category!)) {
       return [{ title: t.declObcTitle, instruction: t.declObcInst, fileName: "Declaration.pdf", downloadUrl: commonDeclLink }];
     }
-    
     if (state.category === 'Minority') {
       return [{ title: t.declMinorityTitle, instruction: t.declMinorityInst, fileName: "Minority_Declaration.pdf", downloadUrl: minorityDeclLink }];
     }
@@ -534,7 +512,6 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     const mode = isFresh ? t.freshApp : t.renewalApp;
     const yearSuffix = state.currentYear === 1 ? 'st' : state.currentYear === 2 ? 'nd' : state.currentYear === 3 ? 'rd' : 'th';
     const hostelStatus = state.isHosteller ? t.yes : t.no;
-
     let message = `*${t.waChecklistHeader}*\n\n`;
     message += `🎓 *Course:* ${state.courseType || state.stream}\n`;
     message += `📅 *Year:* ${state.currentYear}${yearSuffix} Year\n`;
@@ -544,32 +521,26 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       message += `🏠 *Hosteller:* ${hostelStatus}\n`;
     }
     message += `\n`;
-
     if (declarationForms && declarationForms.length > 0) {
       message += `✅ *Declaration Documents:*\n`;
       declarationForms.forEach(d => message += `• ${d.title}\n`);
       message += `\n`;
     }
-
     message += `✅ *${t.academicDocs}:*\n`;
     academicDocs.forEach(d => message += `• ${d.name}\n`);
     message += `\n`;
-
     message += `✅ *${t.categoryDocs}:*\n`;
     govtDocs.forEach(d => message += `• ${d.name}\n`);
     if (choiceDocs) {
       choiceDocs.forEach(d => message += `• ${d} (Any One)\n`);
     }
     message += `\n`;
-
     if (hostelDocsList.length > 0) {
       message += `✅ *${t.hostelDocs}:*\n`;
       hostelDocsList.forEach(d => message += `• ${d.name}\n`);
       message += `\n`;
     }
-
     message += `_${t.waGeneratedBy}_`;
-
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
@@ -577,7 +548,7 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
   const printArea = document.getElementById('print-area');
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {printArea && createPortal(
         <div className="space-y-12">
           <header className="border-b-4 border-black pb-8 mb-8">
@@ -600,56 +571,67 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
         </div>, printArea
       )}
 
-      <header className="space-y-4 no-print text-left">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-tight uppercase max-w-sm">{t.docsTitle}</h2>
+      <header className="space-y-3 no-print text-left">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <h2 className="text-lg font-black text-slate-900 tracking-tight leading-tight uppercase max-w-sm">{t.docsTitle}</h2>
           <div className="flex flex-col items-start sm:items-end shrink-0">
-            <button 
-              ref={printBtnRef}
-              onClick={handlePrint} 
-              className={`inline-flex items-center space-x-2 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-500 rounded-full transition-all border border-slate-200/60 shadow-sm cursor-pointer group ${shouldAnimate ? 'animate-soft-pulse' : ''}`}
-            >
-              <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-              <span className="text-[10px] font-bold whitespace-nowrap tracking-tight">Print Document Checklist</span>
+            <button ref={printBtnRef} onClick={handlePrint} className={`inline-flex items-center space-x-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-500 rounded-lg transition-all border border-slate-200/60 shadow-sm cursor-pointer group ${shouldAnimate ? 'animate-soft-pulse' : ''}`}>
+              <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 00-2 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+              <span className="text-[9px] font-bold whitespace-nowrap tracking-tight">Print Checklist</span>
             </button>
-            <p className="text-[9px] text-slate-400 mt-1.5 font-medium opacity-60">Prints the complete document list on A4 pages.</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-1.5 mt-2">{[state.courseType || state.stream, state.category, `${state.currentYear} Year`, isFresh ? t.freshApp : t.renewalApp].map((pill, i) => (<span key={i} className="px-3 py-1.5 bg-slate-50 text-slate-500 text-[9px] font-black rounded-lg uppercase border border-slate-100 shadow-sm tracking-tight">{pill}</span>))}</div>
+        <div className="flex flex-wrap gap-1 mt-1">{[state.courseType || state.stream, state.category, `${state.currentYear} Year`, isFresh ? t.freshApp : t.renewalApp].map((pill, i) => (<span key={i} className="px-2.5 py-1 bg-slate-50 text-slate-500 text-[8px] font-black rounded uppercase border border-slate-100 shadow-sm tracking-tight">{pill}</span>))}</div>
       </header>
 
-      <div className="p-6 bg-[#1e3a8a] text-white rounded-3xl text-left relative overflow-hidden shadow-xl shadow-blue-900/10 no-print"><h4 className="text-blue-300 font-black text-[10px] uppercase tracking-[0.4em] mb-5">Submission Protocol</h4><ul className="space-y-3.5 text-xs font-bold leading-relaxed opacity-90"><li className="flex items-start space-x-3"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span>{t.rulePdf}</span></li><li className="flex items-start space-x-3"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span>{t.ruleSize}</span></li><li className="flex items-start space-x-3"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span className="text-blue-100/70 italic font-medium">{t.ruleNaming}</span></li></ul></div>
-
-      <div className="space-y-12 no-print">
-        {declarationForms && <section className="space-y-5 text-left"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">Declaration Documents</p><div className="space-y-3">{declarationForms.map((decl, idx) => (<DeclarationCard key={idx} {...decl} downloadLabel={t.downloadForm} />))}</div></section>}
-        <section className="space-y-5 text-left"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.academicDocs}</p><div className="space-y-3">{academicDocs.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group flex flex-col min-w-0"><h4 className="font-black text-slate-700 text-[12px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4>{doc.fileName && <span className="text-[9px] font-bold text-blue-600/60 block mt-1 lowercase italic">File: {doc.fileName}</span>}</div>))}</div></section>
-        <section className="space-y-5 text-left"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.categoryDocs}</p><div className="space-y-3">{govtDocs.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group flex items-start justify-between min-w-0"><h4 className="font-black text-slate-700 text-[12px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4></div>))}{choiceDocs && <div className="bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100 space-y-4 mt-4"><div className="flex flex-col space-y-1"><span className="text-[9px] font-black text-emerald-700 uppercase tracking-tight">ANY ONE REQUIRED</span></div><div className="space-y-2">{choiceDocs.map((name, idx) => (<div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-start justify-between group min-w-0"><h4 className="font-black text-slate-800 text-[12px] leading-relaxed uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow flex items-center">{name}<DocBadge type="anyone" /></h4></div>))}</div></div>}</div></section>
-        {hostelDocsList.length > 0 && <section className="space-y-5 text-left"><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.hostelDocs}</p><div className="space-y-3">{hostelDocsList.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-100 transition-colors group flex flex-col min-w-0"><h4 className="font-black text-slate-700 text-[12px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4>{doc.fileName && <span className="text-[9px] font-bold text-blue-600/60 block mt-1 lowercase italic">File: {doc.fileName}</span>}</div>))}</div></section>}
+      <div className="p-5 bg-[#1e3a8a] text-white rounded-2xl text-left relative overflow-hidden shadow-xl shadow-blue-900/10 no-print">
+        <h4 className="text-blue-300 font-black text-[9px] uppercase tracking-[0.4em] mb-4">Submission Protocol</h4>
+        <ul className="space-y-2.5 text-[11px] font-bold leading-relaxed opacity-90">
+          <li className="flex items-start space-x-2.5"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span>{t.rulePdf}</span></li>
+          <li className="flex items-start space-x-2.5"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span>{t.ruleSize}</span></li>
+          <li className="flex items-start space-x-2.5"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span className="text-blue-100/70 italic font-medium">{t.ruleNaming}</span></li>
+        </ul>
       </div>
 
-      <section className="space-y-6 pt-10 border-t border-slate-100 no-print text-left">
-        <h3 className="font-black text-slate-900 text-lg uppercase tracking-tight">{t.docToolsTitle}</h3>
-        <div className="grid grid-cols-1 gap-3">
+      <div className="space-y-8 no-print">
+        {declarationForms && <section className="space-y-4 text-left"><p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">Declaration Documents</p><div className="space-y-2.5">{declarationForms.map((decl, idx) => (<DeclarationCard key={idx} {...decl} downloadLabel={t.downloadForm} />))}</div></section>}
+        <section className="space-y-4 text-left"><p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.academicDocs}</p><div className="space-y-2">{academicDocs.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-3.5 rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.01)] hover:border-blue-100 transition-colors group flex flex-col min-w-0"><h4 className="font-black text-slate-700 text-[11px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4>{doc.fileName && <span className="text-[8px] font-bold text-blue-600/60 block mt-0.5 lowercase italic">File: {doc.fileName}</span>}</div>))}</div></section>
+        <section className="space-y-4 text-left">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.categoryDocs}</p>
+          <div className="space-y-2">
+            {govtDocs.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-3.5 rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.01)] hover:border-blue-100 transition-colors group flex items-start justify-between min-w-0"><h4 className="font-black text-slate-700 text-[11px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4></div>))}
+            {choiceDocs && <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 space-y-3.5 mt-3"><div className="flex flex-col space-y-1"><span className="text-[8px] font-black text-emerald-700 uppercase tracking-tight">ANY ONE REQUIRED</span></div><div className="space-y-2">{choiceDocs.map((name, idx) => (<div key={idx} className="bg-white border border-slate-100 p-3.5 rounded-xl shadow-sm flex items-start justify-between group min-w-0"><h4 className="font-black text-slate-800 text-[11px] leading-relaxed uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow flex items-center">{name}<DocBadge type="anyone" /></h4></div>))}</div></div>}
+          </div>
+        </section>
+        {hostelDocsList.length > 0 && <section className="space-y-4 text-left"><p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.hostelDocs}</p><div className="space-y-2">{hostelDocsList.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-3.5 rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.01)] hover:border-blue-100 transition-colors group flex flex-col min-w-0"><h4 className="font-black text-slate-700 text-[11px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4>{doc.fileName && <span className="text-[8px] font-bold text-blue-600/60 block mt-0.5 lowercase italic">File: {doc.fileName}</span>}</div>))}</div></section>}
+      </div>
+
+      <section className="space-y-5 pt-8 border-t border-slate-100 no-print text-left">
+        <h3 className="font-black text-slate-900 text-base uppercase tracking-tight">{t.docToolsTitle}</h3>
+        <div className="grid grid-cols-1 gap-2.5">
           {[ { label: t.btnMerge, sub: t.helperMerge, url: 'https://www.ilovepdf.com/merge_pdf' }, { label: t.btnCompress, sub: t.helperCompress, url: 'https://www.ilovepdf.com/compress_pdf' }, { label: t.btnImgToPdf, sub: t.helperImgToPdf, url: 'https://www.ilovepdf.com/jpg_to_pdf' } ].map((tool, i) => (
-            <a key={i} href={tool.url} target="_blank" rel="noopener noreferrer" className="p-5 rounded-2xl border border-slate-100 hover:border-blue-300 hover:bg-white bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] active:scale-[0.98] transition-all flex flex-col group text-left">
-              <span className="font-black text-[11px] uppercase tracking-widest text-slate-800 group-hover:text-blue-900 transition-colors">{tool.label}</span>
-              <span className="text-[9px] font-bold text-slate-400 mt-2 group-hover:text-slate-500 transition-colors">{tool.sub}</span>
+            <a key={i} href={tool.url} target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 hover:border-blue-300 hover:bg-white bg-white shadow-[0_1px_4px_rgba(0,0,0,0.01)] active:scale-[0.98] transition-all flex flex-col group text-left">
+              <span className="font-black text-[10px] uppercase tracking-widest text-slate-800 group-hover:text-blue-900 transition-colors">{tool.label}</span>
+              <span className="text-[8px] font-bold text-slate-400 mt-1.5 group-hover:text-slate-500 transition-colors">{tool.sub}</span>
             </a>
           ))}
         </div>
       </section>
 
-      <div className="space-y-3 mt-6 no-print">
+      <div className="space-y-2.5 mt-6 no-print">
         <button 
           onClick={handleShareOnWhatsApp} 
-          className="w-full bg-[#25D366] text-white font-black py-5 rounded-2xl shadow-xl shadow-green-900/10 active:scale-[0.98] uppercase tracking-[0.1em] text-[11px] flex items-center justify-center space-x-3 transition-all hover:bg-[#128C7E] h-16"
+          className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white font-black px-6 py-4 rounded-xl shadow-lg shadow-green-500/10 active:scale-[0.96] transition-all flex items-center justify-center space-x-3 mb-1.5 min-h-[52px] text-center"
+          aria-label="Share document checklist on WhatsApp"
         >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 448 512">
+          <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 448 512">
             <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-5.5-2.8-23.2-8.5-44.2-27.1-16.4-14.6-27.4-32.7-30.6-38.2-3.2-5.6-.3-8.6 2.5-11.3 2.5-2.5 5.5-6.5 8.3-9.7 2.8-3.3 3.7-5.6 5.6-9.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 13.2 5.8 23.5 9.2 31.5 11.8 13.3 4.2 25.4 3.6 35 2.2 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
           </svg>
-          <span>{t.shareWhatsApp}</span>
+          <span className="text-[10px] uppercase font-black tracking-[0.05em] leading-snug break-words max-w-[200px]">
+            {t.shareWhatsApp}
+          </span>
         </button>
-        <button onClick={onRestart} className="w-full bg-blue-900 text-white font-black py-6 rounded-2xl shadow-2xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.3em] text-[11px] transition-all hover:bg-blue-800 h-16">{t.home}</button>
+        <button onClick={onRestart} className="w-full bg-blue-900 text-white font-black py-4 rounded-xl shadow-2xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.2em] text-[10px] transition-all hover:bg-blue-800 h-14">{t.home}</button>
       </div>
     </div>
   );
