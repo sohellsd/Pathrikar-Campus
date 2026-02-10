@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Stream, CourseType, Category, AppState, Language } from './types';
 import { StreamIcons } from './constants';
 import { translations } from './translations';
@@ -200,6 +201,7 @@ const App: React.FC = () => {
         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mb-3 opacity-50">{t.footerText}</p>
         <a href="https://www.instagram.com/sohellsd/" target="_blank" rel="noopener noreferrer" className="text-blue-800 font-black text-xs tracking-tight uppercase hover:text-blue-600 transition-colors">Sohel Sayyad</a>
       </footer>
+      <SpeedInsights />
     </div>
   );
 };
