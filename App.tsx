@@ -1,5 +1,17 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { 
+  ShieldCheck, 
+  IndianRupee, 
+  Home, 
+  CreditCard, 
+  GraduationCap, 
+  History, 
+  Building2, 
+  FileText, 
+  LogOut, 
+  BookOpen 
+} from 'lucide-react';
 import { Stream, CourseType, Category, AppState, Language } from './types';
 import { StreamIcons } from './constants';
 import { translations } from './translations';
@@ -49,7 +61,7 @@ const App: React.FC = () => {
   const isRenewal = useMemo(() => state.currentYear !== null && state.currentYear > 1, [state.currentYear]);
   
   const handleStreamSelect = (s: Stream) => {
-    const nextStepNum = (s === Stream.Pharmacy || s === Stream.Management || s === Stream.ASC) ? 2 : 3;
+    const nextStepNum = (s === Stream.Pharmacy || s === Stream.Management || s === Stream.ASC || s === Stream.Engineering) ? 2 : 3;
     setState(prev => ({ 
       ...prev, 
       stream: s, 
@@ -233,10 +245,40 @@ const StepStream: React.FC<{ selected: Stream | null; onSelect: (s: Stream) => v
 };
 
 const StepCourse: React.FC<{ selected: CourseType | null; stream: Stream | null; onSelect: (c: CourseType) => void; t: any; }> = ({ selected, stream, onSelect, t }) => {
+  if (stream === Stream.Engineering) {
+    return (
+      <div className="space-y-6">
+        <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.selectCourse}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectCourseSub}</p></header>
+        <div className="grid grid-cols-1 gap-3 no-select">
+          {[
+            { value: CourseType.BE_BTech, label: t.beBtech },
+            { value: CourseType.Poly_Diploma, label: t.polytechnic }
+          ].map(item => (
+            <button 
+              key={item.value} 
+              onClick={() => onSelect(item.value)} 
+              className={`w-full flex items-center p-5 rounded-xl border-2 transition-all active:scale-[0.98] text-left ${selected === item.value ? 'border-blue-600 bg-blue-50/30 shadow-md' : 'border-slate-50 bg-[#fafafa]'}`}
+            >
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === item.value ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-200' : 'border-slate-200 bg-white'}`}>
+                {selected === item.value && <div className="w-2 h-2 bg-white rounded-full" />}
+              </div>
+              <div className="ml-4">
+                <span className={`font-black text-sm uppercase tracking-tight ${selected === item.value ? 'text-blue-900' : 'text-slate-700'}`}>
+                  {item.label}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   let options: CourseType[] = [];
   if (stream === Stream.Pharmacy) options = [CourseType.BPharm, CourseType.DPharm, CourseType.MPharm];
   else if (stream === Stream.Management) options = [CourseType.BBA, CourseType.BCA, CourseType.MBA, CourseType.MCA];
   else if (stream === Stream.ASC) options = [CourseType.BA, CourseType.BSc, CourseType.BCom, CourseType.MA, CourseType.MSc, CourseType.MCom];
+  else if (stream === Stream.Nursing) options = [CourseType.BScNursing, CourseType.GNM];
   return (
     <div className="space-y-6">
       <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.selectCourse}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectCourseSub}</p></header>
@@ -275,12 +317,16 @@ const StepCategory: React.FC<{ selected: Category | null; onSelect: (c: Category
 
 const StepYear: React.FC<{ state: AppState; onUpdate: (updates: Partial<AppState>) => void; onContinue: () => void; t: any; }> = ({ state, onUpdate, onContinue, t }) => {
   const is2YearCourse = [CourseType.MPharm, CourseType.MBA, CourseType.MCA, CourseType.MA, CourseType.MSc, CourseType.MCom, CourseType.DPharm].includes(state.courseType!);
-  const years = is2YearCourse ? [1, 2] : [1, 2, 3, 4];
+  const is3YearCourse = [CourseType.BA, CourseType.BSc, CourseType.BCom, CourseType.BBA, CourseType.BCA, CourseType.Poly_Diploma, CourseType.GNM].includes(state.courseType!);
+  const years = is2YearCourse ? [1, 2] : is3YearCourse ? [1, 2, 3] : [1, 2, 3, 4];
   const isMaster = [CourseType.MPharm, CourseType.MBA, CourseType.MCA, CourseType.MA, CourseType.MSc, CourseType.MCom].includes(state.courseType!);
   const isASC = state.stream === Stream.ASC;
   const isHostelEligible = !isASC && state.category && ['Open', 'SC', 'ST', 'SBC', 'VJNT'].includes(state.category);
   
-  const isBPharm2ndYear = state.stream === Stream.Pharmacy && state.courseType === CourseType.BPharm && state.currentYear === 2;
+  const isDirectSecondYearEligible = (
+    (state.stream === Stream.Pharmacy && state.courseType === CourseType.BPharm) ||
+    (state.stream === Stream.Engineering && state.courseType === CourseType.BE_BTech)
+  ) && state.currentYear === 2;
 
   return (
     <div className="space-y-6">
@@ -289,7 +335,7 @@ const StepYear: React.FC<{ state: AppState; onUpdate: (updates: Partial<AppState
           <button key={y} onClick={() => onUpdate({ currentYear: y })} className={`p-4 rounded-xl border-2 font-black text-[10px] uppercase transition-all active:scale-[0.97] ${state.currentYear === y ? 'border-blue-600 bg-blue-50/30 text-blue-900 shadow-md' : 'border-slate-50 bg-[#fafafa] text-slate-400'}`}>{y}{y === 1 ? 'st' : y === 2 ? 'nd' : y === 3 ? 'rd' : 'th'} Year</button>
         ))}</div>
       
-      {isBPharm2ndYear && (
+      {isDirectSecondYearEligible && (
         <div className="bg-slate-50 p-5 rounded-xl space-y-4 no-select border border-slate-200">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{t.directSecondYearQuestion}</p>
           <div className="flex space-x-2.5">
@@ -377,7 +423,9 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
   const isDPharm = state.courseType === CourseType.DPharm;
   const isASC = state.stream === Stream.ASC;
   const isMaster = [CourseType.MPharm, CourseType.MBA, CourseType.MCA, CourseType.MA, CourseType.MSc, CourseType.MCom].includes(state.courseType!);
-  
+  const isEngineering = state.stream === Stream.Engineering;
+  const isTechnical = [Stream.Engineering, Stream.Pharmacy, Stream.Management, Stream.Nursing].includes(state.stream!);
+
   const [shouldAnimate, setShouldAnimate] = useState(true);
   const printBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -403,75 +451,130 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     };
   }, []);
 
-  const academicDocs = useMemo<DocItem[]>(() => {
+  // 1) Caste Details
+  const casteDocs = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
-    const isReservedCat = ['SC', 'ST'].includes(state.category || '');
-    if (isReservedCat) {
-      docs.push({ name: 'Current Admission Bonafide Certificate' });
-    } else {
-      docs.push({ name: 'Admission Bonafide + Fees Paid Receipt', badge: 'merge' });
+    if (state.category === 'Open' || state.category === 'Minority') return docs;
+
+    docs.push({ name: t.docCasteCert, badge: 'mandatory' });
+
+    // Caste Validity
+    const validityMandatory = (isTechnical && state.category === 'VJNT') || 
+                             [CourseType.MBA, CourseType.MCA, CourseType.MCom, CourseType.MSc].includes(state.courseType as CourseType);
+    
+    docs.push({ 
+      name: t.docCasteValidity, 
+      badge: validityMandatory ? 'mandatory' : 'optional' 
+    });
+
+    // Non-Creamy Layer
+    if (['OBC', 'SEBC', 'SBC', 'VJNT'].includes(state.category!)) {
+      docs.push({ name: t.docNCL, badge: 'mandatory' });
     }
-    docs.push({ name: '10th Marksheet' });
-    docs.push({ name: '12th Marksheet' });
-    if (!isASC) docs.push({ name: t.docAllotment });
-    if (isFresh) {
-      if (isMaster) { 
-        docs.push({ name: t.docGradMarksheet }); 
-        docs.push({ name: t.docGradTC }); 
-      } else { 
-        docs.push({ name: 'Previous College TC / Leaving Certificate' }); 
-      }
-      if (state.hadGap) docs.push({ name: 'Gap Certificate', badge: 'onepdf' });
-    } else {
-      if (isDPharm) { 
-        docs.push({ name: '1st Year Marksheet', badge: 'onepdf' }); 
+
+    return docs;
+  }, [state.category, isTechnical, t]);
+
+  // 2) Income Details
+  const incomeDocs = useMemo<DocItem[]>(() => {
+    return [{ name: t.docIncomeCert }];
+  }, [t]);
+
+  // 3) Domicile Details
+  const domicileDocs = useMemo<DocItem[]>(() => {
+    const docs: DocItem[] = [];
+    docs.push({ name: t.docDomicileCert });
+    if (state.category === 'Open' && state.isHosteller) {
+      docs.push({ name: 'Alpabhudharak Certificate / Job Card', badge: 'anyone' });
+    }
+    return docs;
+  }, [state.category, state.isHosteller, t]);
+
+  // 4) Bank Details
+  const bankDocs = useMemo<DocItem[]>(() => {
+    return [
+      { name: t.docAadhaarCard },
+      { name: t.docBankPassbook }
+    ];
+  }, [t]);
+
+  // 5) Current Course Details
+  const currentCourseDocs = useMemo<DocItem[]>(() => {
+    const docs: DocItem[] = [];
+    
+    // 1. Bonafide / Fees
+    docs.push({ name: t.docAdmissionBonafide });
+    if (state.category === 'Open') {
+      docs.push({ name: t.docFeesReceipt, badge: 'merge' });
+    }
+
+    // 2. Allotment Letter
+    if (!isASC) {
+      docs.push({ name: t.docAllotment });
+    }
+
+    // 3. Academic Marksheets
+    if (state.isDirectSecondYear && (isEngineering || state.courseType === CourseType.BPharm)) {
+       docs.push({ name: t.docDiplomaFinalMarksheet, badge: 'onepdf' });
+    }
+
+    if (!isFresh) {
+      if (isDPharm || state.courseType === CourseType.Poly_Diploma) {
+        if (state.currentYear === 2) docs.push({ name: '1st Year Marksheet', badge: 'onepdf' });
+        if (state.currentYear === 3) docs.push({ name: '2nd Year Marksheet', badge: 'onepdf' });
+      } else if (state.isDirectSecondYear) {
+        if (state.currentYear! >= 3) {
+          docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge' });
+        }
+        if (state.currentYear! >= 4) {
+          docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge' });
+        }
       } else {
-        const isBPharmDSY = state.courseType === CourseType.BPharm && state.isDirectSecondYear;
-        if (isBPharmDSY) {
-            docs.push({ name: t.docDiplomaMarksheet, badge: 'onepdf', fileName: 'Diploma_2nd_Year_Marksheet.pdf' });
-            if (state.currentYear && state.currentYear >= 3) {
-              docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge', fileName: 'Sem3_Sem4_Marksheet.pdf' });
-            }
-            if (state.currentYear && state.currentYear >= 4) {
-              docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge', fileName: 'Sem5_Sem6_Marksheet.pdf' });
-            }
-        } else {
-            if (state.currentYear && state.currentYear >= 2) {
-                docs.push({ name: '1st Year Marksheet (Sem 1 + Sem 2)', badge: 'merge', fileName: 'Sem1_Sem2_Marksheet.pdf' });
-            }
-            if (state.currentYear && state.currentYear >= 3) {
-                docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge', fileName: 'Sem3_Sem4_Marksheet.pdf' });
-            }
-            if (state.currentYear && state.currentYear >= 4) {
-                docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge', fileName: 'Sem5_Sem6_Marksheet.pdf' });
-            }
+        if (state.currentYear! >= 2) {
+          docs.push({ name: '1st Year Marksheet (Sem 1 + Sem 2)', badge: 'merge' });
+        }
+        if (state.currentYear! >= 3) {
+          docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge' });
+        }
+        if (state.currentYear! >= 4) {
+          docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge' });
         }
       }
-      docs.push({ name: isMaster ? t.docGradTC : 'Previous College TC / Leaving Certificate' });
     }
-    return docs;
-  }, [isASC, isFresh, isMaster, isDPharm, state.currentYear, state.hadGap, state.category, state.isDirectSecondYear, state.courseType, t]);
 
-  const govtDocs = useMemo<DocItem[]>(() => {
+    return docs;
+  }, [state.category, isASC, isFresh, isDPharm, state.isDirectSecondYear, state.currentYear, state.courseType, isEngineering, t]);
+
+  // 6) Previous Education Details
+  const prevEduDocs = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
-    docs.push({ name: 'Aadhaar Card' });
-    const incomeRequired = isFresh || ['Open', 'SEBC', 'Minority'].includes(state.category!);
-    if (incomeRequired) docs.push({ name: 'Income Certificate' });
-    if (state.category !== 'Open' && state.category !== 'Minority') {
-      docs.push({ name: 'Caste Certificate' });
-      if (!isASC) {
-        if (['OBC', 'SEBC', 'SBC', 'VJNT'].includes(state.category!)) {
-          docs.push({ name: t.docNCL, badge: 'ifavailable' });
-        }
-      }
-      const validityMandatoryCourses = [CourseType.MBA, CourseType.MCA, CourseType.MCom, CourseType.MSc];
-      const isMandatory = !!(state.courseType && validityMandatoryCourses.includes(state.courseType));
-      docs.push({ name: t.docCasteValidity, badge: isMandatory ? 'mandatory' : 'optional' });
+    
+    docs.push({ name: t.doc10thMarksheet });
+    docs.push({ name: t.doc12thMarksheet });
+    
+    if (isMaster) {
+      docs.push({ name: t.docGradMarksheet });
     }
-    docs.push({ name: 'Domicile Certificate' });
-    return docs;
-  }, [isFresh, isASC, state.category, state.courseType, t]);
 
+    if (state.hadGap) {
+      docs.push({ name: t.docGapCert, badge: 'onepdf' });
+    }
+
+    return docs;
+  }, [isMaster, state.hadGap, t]);
+
+  // 7) Leaving Certificates
+  const leavingCertDocsList = useMemo<DocItem[]>(() => {
+    const docs: DocItem[] = [];
+    if (isMaster) {
+      if (isFresh) docs.push({ name: t.docGradTC });
+    } else if (isFresh) {
+      docs.push({ name: t.docLeavingCert });
+    }
+    return docs;
+  }, [isFresh, isMaster, t]);
+
+  // 8) Hostel Details
   const hostelDocsList = useMemo<DocItem[]>(() => {
     const isHostelEligibleCategory = state.category && ['Open', 'SC', 'ST', 'SBC', 'VJNT'].includes(state.category);
     if (state.isHosteller && !isASC && isHostelEligibleCategory) {
@@ -480,11 +583,11 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     return [];
   }, [state.isHosteller, isASC, state.category, t]);
 
-  const choiceDocs = useMemo(() => (state.category === 'Open' && state.isHosteller) ? ['Alpabhudharak Certificate', 'Job Card'] : null, [state.category, state.isHosteller]);
-
+  // 9) Declaration Forms
   const declarationForms = useMemo(() => {
     const commonDeclLink = "https://www.atharvacoe.ac.in/wp-content/uploads/Pratidnya-Patra.pdf";
     const minorityDeclLink = "https://www.mhssce.ac.in/pdf/Income_Self_declaration_minority.pdf";
+    
     if (state.category === 'Open') {
       if (state.isHosteller) {
          return [
@@ -503,6 +606,25 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     return null;
   }, [state.category, state.isHosteller, t]);
 
+  const allSections = useMemo(() => {
+    const sections: { type: string; title?: string; sub?: string; icon?: React.ReactNode; docs?: DocItem[] }[] = [
+      { type: 'docs', title: t.casteDocs, sub: t.casteDocsSub, icon: <ShieldCheck className="w-4 h-4" />, docs: casteDocs },
+      { type: 'docs', title: t.incomeDocs, sub: t.incomeDocsSub, icon: <IndianRupee className="w-4 h-4" />, docs: incomeDocs },
+      { type: 'docs', title: t.domicileDocs, sub: t.domicileDocsSub, icon: <Home className="w-4 h-4" />, docs: domicileDocs },
+      { type: 'docs', title: t.bankDocs, sub: t.bankDocsSub, icon: <CreditCard className="w-4 h-4" />, docs: bankDocs },
+      { type: 'docs', title: t.currentCourseDocs, sub: t.currentCourseDocsSub, icon: <GraduationCap className="w-4 h-4" />, docs: currentCourseDocs },
+      { type: 'docs', title: t.prevEduDocs, sub: t.prevEduDocsSub, icon: <History className="w-4 h-4" />, docs: prevEduDocs },
+      { type: 'docs', title: t.hostelDocsSection, sub: t.hostelDocsSectionSub, icon: <Building2 className="w-4 h-4" />, docs: hostelDocsList },
+      { type: 'declaration' },
+      { type: 'docs', title: t.leavingCertDocs, sub: t.leavingCertDocsSub, icon: <LogOut className="w-4 h-4" />, docs: leavingCertDocsList },
+    ];
+    
+    return sections.filter(s => {
+      if (s.type === 'declaration') return declarationForms !== null;
+      return s.docs && s.docs.length > 0;
+    });
+  }, [casteDocs, incomeDocs, domicileDocs, bankDocs, currentCourseDocs, prevEduDocs, hostelDocsList, leavingCertDocsList, declarationForms, t]);
+
   const handlePrint = () => {
     setShouldAnimate(false);
     window.print();
@@ -512,34 +634,30 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     const mode = isFresh ? t.freshApp : t.renewalApp;
     const yearSuffix = state.currentYear === 1 ? 'st' : state.currentYear === 2 ? 'nd' : state.currentYear === 3 ? 'rd' : 'th';
     const hostelStatus = state.isHosteller ? t.yes : t.no;
+    
     let message = `*${t.waChecklistHeader}*\n\n`;
     message += `🎓 *Course:* ${state.courseType || state.stream}\n`;
     message += `📅 *Year:* ${state.currentYear}${yearSuffix} Year\n`;
     message += `🏷️ *Category:* ${state.category}\n`;
     message += `📝 *Mode:* ${mode}\n`;
-    if (state.stream !== Stream.ASC) {
+    if (!isASC) {
       message += `🏠 *Hosteller:* ${hostelStatus}\n`;
     }
     message += `\n`;
-    if (declarationForms && declarationForms.length > 0) {
-      message += `✅ *Declaration Documents:*\n`;
-      declarationForms.forEach(d => message += `• ${d.title}\n`);
+
+    allSections.forEach(section => {
+      if (section.type === 'declaration') {
+        message += `✅ *${t.declarationDocsSection}:*\n`;
+        declarationForms?.forEach(d => message += `• ${d.title}\n`);
+      } else {
+        message += `✅ *${section.title}:*\n`;
+        section.docs?.forEach(d => {
+          if (d.name) message += `• ${d.name}\n`;
+        });
+      }
       message += `\n`;
-    }
-    message += `✅ *${t.academicDocs}:*\n`;
-    academicDocs.forEach(d => message += `• ${d.name}\n`);
-    message += `\n`;
-    message += `✅ *${t.categoryDocs}:*\n`;
-    govtDocs.forEach(d => message += `• ${d.name}\n`);
-    if (choiceDocs) {
-      choiceDocs.forEach(d => message += `• ${d} (Any One)\n`);
-    }
-    message += `\n`;
-    if (hostelDocsList.length > 0) {
-      message += `✅ *${t.hostelDocs}:*\n`;
-      hostelDocsList.forEach(d => message += `• ${d.name}\n`);
-      message += `\n`;
-    }
+    });
+
     message += `_${t.waGeneratedBy}_`;
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
@@ -562,12 +680,40 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
             </div>
           </header>
           <div className="space-y-10">
-            {declarationForms && <div className="print-section"><h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Declaration Documents</h3>{declarationForms.map((decl, idx) => (<div key={idx} className="print-doc-item"><span className="print-checkbox"></span><span className="text-sm font-black uppercase">{decl.title}</span></div>))}</div>}
-            <div className="print-section"><h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{t.academicDocs}</h3>{academicDocs.map((doc, idx) => (<div key={idx} className="print-doc-item"><span className="print-checkbox"></span><span className="text-sm font-black uppercase">{doc.name}{doc.badge && <DocBadge type={doc.badge} isPrint />}</span></div>))}</div>
-            <div className="print-section"><h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{t.categoryDocs}</h3>{govtDocs.map((doc, idx) => (<div key={idx} className="print-doc-item"><span className="print-checkbox"></span><span className="text-sm font-black uppercase">{doc.name}{doc.badge && <DocBadge type={doc.badge} isPrint />}</span></div>))}{choiceDocs && choiceDocs.map((name, idx) => (<div key={idx} className="print-doc-item"><span className="print-checkbox"></span><span className="text-sm font-black uppercase">{name}<DocBadge type="anyone" isPrint /></span></div>))}</div>
-            {hostelDocsList.length > 0 && <div className="print-section"><h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{t.hostelDocs}</h3>{hostelDocsList.map((doc, idx) => (<div key={idx} className="print-doc-item"><span className="print-checkbox"></span><span className="text-sm font-black uppercase">{doc.name}{doc.badge && <DocBadge type={doc.badge} isPrint />}</span></div>))}</div>}
+            {allSections.map((section, sIdx) => {
+              if (section.type === 'declaration') {
+                return (
+                  <div key={sIdx} className="print-section">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{t.declarationDocsSection}</h3>
+                    {declarationForms?.map((decl, idx) => (
+                      <div key={idx} className="print-doc-item">
+                        <span className="print-checkbox"></span>
+                        <span className="text-sm font-black uppercase">{decl.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
+              
+              return (
+                <div key={sIdx} className="print-section">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{section.title}</h3>
+                  {section.docs?.filter(doc => doc.name).map((doc, dIdx) => (
+                    <div key={dIdx} className="print-doc-item">
+                      <span className="print-checkbox"></span>
+                      <span className="text-sm font-black uppercase">
+                        {doc.name}{doc.badge && <DocBadge type={doc.badge} isPrint />}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
-          <footer className="mt-12 pt-8 border-t border-black text-center"><p className="text-sm font-black uppercase tracking-widest text-black mb-2">Final verification at college office.</p><p className="text-[9px] text-slate-500 uppercase tracking-tighter">Generated on {new Date().toLocaleDateString()}</p></footer>
+          <footer className="mt-12 pt-8 border-t border-black text-center">
+            <p className="text-sm font-black uppercase tracking-widest text-black mb-2">Final verification at college office.</p>
+            <p className="text-[9px] text-slate-500 uppercase tracking-tighter">Generated on {new Date().toLocaleDateString()}</p>
+          </footer>
         </div>, printArea
       )}
 
@@ -593,17 +739,62 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
         </ul>
       </div>
 
-      <div className="space-y-8 no-print">
-        {declarationForms && <section className="space-y-4 text-left"><p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">Declaration Documents</p><div className="space-y-2.5">{declarationForms.map((decl, idx) => (<DeclarationCard key={idx} {...decl} downloadLabel={t.downloadForm} />))}</div></section>}
-        <section className="space-y-4 text-left"><p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.academicDocs}</p><div className="space-y-2">{academicDocs.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-3.5 rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.01)] hover:border-blue-100 transition-colors group flex flex-col min-w-0"><h4 className="font-black text-slate-700 text-[11px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4>{doc.fileName && <span className="text-[8px] font-bold text-blue-600/60 block mt-0.5 lowercase italic">File: {doc.fileName}</span>}</div>))}</div></section>
-        <section className="space-y-4 text-left">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.categoryDocs}</p>
-          <div className="space-y-2">
-            {govtDocs.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-3.5 rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.01)] hover:border-blue-100 transition-colors group flex items-start justify-between min-w-0"><h4 className="font-black text-slate-700 text-[11px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4></div>))}
-            {choiceDocs && <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 space-y-3.5 mt-3"><div className="flex flex-col space-y-1"><span className="text-[8px] font-black text-emerald-700 uppercase tracking-tight">ANY ONE REQUIRED</span></div><div className="space-y-2">{choiceDocs.map((name, idx) => (<div key={idx} className="bg-white border border-slate-100 p-3.5 rounded-xl shadow-sm flex items-start justify-between group min-w-0"><h4 className="font-black text-slate-800 text-[11px] leading-relaxed uppercase tracking-tight pr-2 pt-0.5 whitespace-normal break-words flex-grow flex items-center">{name}<DocBadge type="anyone" /></h4></div>))}</div></div>}
-          </div>
-        </section>
-        {hostelDocsList.length > 0 && <section className="space-y-4 text-left"><p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">{t.hostelDocs}</p><div className="space-y-2">{hostelDocsList.map((doc, idx) => (<div key={idx} className="bg-white border border-slate-100 p-3.5 rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.01)] hover:border-blue-100 transition-colors group flex flex-col min-w-0"><h4 className="font-black text-slate-700 text-[11px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center">{doc.name}{doc.badge && <DocBadge type={doc.badge} />}</h4>{doc.fileName && <span className="text-[8px] font-bold text-blue-600/60 block mt-0.5 lowercase italic">File: {doc.fileName}</span>}</div>))}</div></section>}
+      <div className="space-y-6 no-print">
+        {allSections.map((section, sIdx) => {
+          if (section.type === 'declaration') {
+            return (
+              <section key={sIdx} className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden text-left">
+                <div className="bg-slate-50/50 px-5 py-4 border-b border-slate-100">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-white rounded-lg border border-slate-100 text-blue-600 shadow-sm">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">{t.declarationDocsSection}</h3>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{t.declarationDocsSectionSub}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5 space-y-3">
+                  {declarationForms?.map((decl, idx) => (
+                    <DeclarationCard key={idx} {...decl} downloadLabel={t.downloadForm} />
+                  ))}
+                </div>
+              </section>
+            );
+          }
+          
+          return (
+            <section key={sIdx} className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden text-left">
+              <div className="bg-slate-50/50 px-5 py-4 border-b border-slate-100">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-white rounded-lg border border-slate-100 text-blue-600 shadow-sm">
+                    {section.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">{section.title}</h3>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{section.sub}</p>
+                  </div>
+                </div>
+              </div>
+              {section.docs && section.docs.length > 0 && (
+                <div className="p-5 space-y-4">
+                  {section.docs.filter(doc => doc.name).map((doc, dIdx) => (
+                    <div key={dIdx} className="flex items-start space-x-3 group">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-600/30 mt-1.5 shrink-0 group-hover:bg-blue-600 transition-colors" />
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-black text-slate-700 text-[11px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center flex-wrap gap-1.5">
+                          {doc.name}{doc.badge && <DocBadge type={doc.badge} />}
+                        </h4>
+                        {doc.fileName && <span className="text-[8px] font-bold text-blue-600/60 block mt-0.5 lowercase italic">File: {doc.fileName}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })}
       </div>
 
       <section className="space-y-5 pt-8 border-t border-slate-100 no-print text-left">

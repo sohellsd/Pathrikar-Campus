@@ -19,7 +19,11 @@ export enum CourseType {
   BCom = 'B.Com',
   MA = 'MA',
   MSc = 'MSc',
-  MCom = 'M.Com'
+  MCom = 'M.Com',
+  BE_BTech = 'BE / B.Tech',
+  Poly_Diploma = 'Polytechnic / Diploma',
+  BScNursing = 'B.Sc Nursing',
+  GNM = 'GNM'
 }
 
 export type Category = 'Open' | 'OBC' | 'SC' | 'ST' | 'SBC' | 'VJNT' | 'SEBC' | 'Minority';
