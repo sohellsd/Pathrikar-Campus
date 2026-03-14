@@ -144,7 +144,7 @@ const App: React.FC = () => {
               <h3 className="text-xl font-black mb-4 tracking-tight">{activeVideo.title}</h3>
               <p className="text-sm opacity-60 mb-8 italic">{activeVideo.desc}</p>
               {activeVideo.url && (
-                <a href={activeVideo.url} target="_blank" rel="noopener noreferrer" className="bg-white text-blue-900 px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-colors">Open Tutorial</a>
+                <a href={activeVideo.url} target="_blank" rel="noopener noreferrer" className="bg-white text-blue-900 px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-colors">{t.openTutorial}</a>
               )}
             </div>
           </div>
@@ -158,13 +158,13 @@ const App: React.FC = () => {
             <div className="flex bg-blue-900/50 p-1 rounded-2xl backdrop-blur-md border border-white/10">
               {(['en', 'hi', 'mr'] as Language[]).map(lang => (
                 <button key={lang} onClick={() => setState(prev => ({ ...prev, language: lang }))} className={`px-3 py-1 text-[10px] font-black rounded-xl transition-all duration-300 ${state.language === lang ? 'bg-white text-blue-900 shadow-lg' : 'text-blue-200/50 hover:text-white'}`}>
-                  {lang === 'en' ? 'EN' : lang === 'hi' ? 'हिं' : 'मराठी'}
+                  {lang === 'en' ? t.langEn : lang === 'hi' ? t.langHi : t.langMr}
                 </button>
               ))}
             </div>
           </div>
           <div className="flex flex-col text-left mb-6">
-            <h1 className="font-black text-xl tracking-tighter leading-none uppercase">Pathrikar Campus</h1>
+            <h1 className="font-black text-xl tracking-tighter leading-none uppercase">{t.title}</h1>
             <p className="text-[9px] font-bold text-blue-200/50 uppercase tracking-widest mt-1.5">{t.subtitle}</p>
           </div>
           <div className="flex flex-col items-end space-y-1.5">
@@ -190,7 +190,7 @@ const App: React.FC = () => {
                 <svg className="w-4 h-4 transition-transform group-hover:translate-x-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path d="M15 19l-7-7 7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <span className="font-bold text-[10px] uppercase tracking-widest">Go {t.back}</span>
+                <span className="font-bold text-[10px] uppercase tracking-widest">{t.goBack}</span>
               </button>
             )}
             {state.step === 1 && <StepStream selected={state.stream} onSelect={handleStreamSelect} t={t} />}
@@ -294,14 +294,14 @@ const StepCourse: React.FC<{ selected: CourseType | null; stream: Stream | null;
 
 const StepCategory: React.FC<{ selected: Category | null; onSelect: (c: Category) => void; t: any; }> = ({ selected, onSelect, t }) => {
   const categories: {label: string, value: Category}[] = [
-    { label: 'Open / General', value: 'Open' }, 
-    { label: 'OBC', value: 'OBC' }, 
-    { label: 'SC', value: 'SC' }, 
-    { label: 'ST', value: 'ST' }, 
-    { label: 'SBC', value: 'SBC' }, 
-    { label: 'VJNT', value: 'VJNT' }, 
-    { label: 'SEBC', value: 'SEBC' }, 
-    { label: 'Minority', value: 'Minority' },
+    { label: t.catOpen, value: 'Open' }, 
+    { label: t.catOBC, value: 'OBC' }, 
+    { label: t.catSC, value: 'SC' }, 
+    { label: t.catST, value: 'ST' }, 
+    { label: t.catSBC, value: 'SBC' }, 
+    { label: t.catVJNT, value: 'VJNT' }, 
+    { label: t.catSEBC, value: 'SEBC' }, 
+    { label: t.catMinority, value: 'Minority' },
   ];
   return (
     <div className="space-y-6">
@@ -332,7 +332,7 @@ const StepYear: React.FC<{ state: AppState; onUpdate: (updates: Partial<AppState
     <div className="space-y-6">
       <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.selectYear}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectYearSub}</p></header>
       <div className="grid grid-cols-2 gap-2.5 no-select">{years.map(y => (
-          <button key={y} onClick={() => onUpdate({ currentYear: y })} className={`p-4 rounded-xl border-2 font-black text-[10px] uppercase transition-all active:scale-[0.97] ${state.currentYear === y ? 'border-blue-600 bg-blue-50/30 text-blue-900 shadow-md' : 'border-slate-50 bg-[#fafafa] text-slate-400'}`}>{y}{y === 1 ? 'st' : y === 2 ? 'nd' : y === 3 ? 'rd' : 'th'} Year</button>
+          <button key={y} onClick={() => onUpdate({ currentYear: y })} className={`p-4 rounded-xl border-2 font-black text-[10px] uppercase transition-all active:scale-[0.97] ${state.currentYear === y ? 'border-blue-600 bg-blue-50/30 text-blue-900 shadow-md' : 'border-slate-50 bg-[#fafafa] text-slate-400'}`}>{y}{y === 1 ? t.st : y === 2 ? t.nd : y === 3 ? t.rd : t.th} {t.yearLabel}</button>
         ))}</div>
       
       {isDirectSecondYearEligible && (
@@ -371,14 +371,14 @@ const StepLoginCheck: React.FC<{ ready: AppState['loginReady']; onToggle: (f: ke
   );
 };
 
-const DocBadge: React.FC<{ type: BadgeType; isPrint?: boolean }> = ({ type, isPrint }) => {
+const DocBadge: React.FC<{ type: BadgeType; isPrint?: boolean; t: any }> = ({ type, isPrint, t }) => {
   const config = {
-    merge: { text: 'MERGE REQUIRED', colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
-    onepdf: { text: 'ONE PDF', colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
-    optional: { text: 'OPTIONAL', colors: 'bg-slate-50 text-slate-500 border-slate-200', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-    ifavailable: { text: 'IF AVAILABLE', colors: 'bg-slate-50 text-slate-500 border-slate-200', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-    anyone: { text: 'ANY ONE REQUIRED', colors: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: 'M5 13l4 4L19 7' },
-    mandatory: { text: 'MANDATORY', colors: 'bg-red-50 text-red-700 border-red-100', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+    merge: { text: t.badgeMerge, colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
+    onepdf: { text: t.badgeOnePdf, colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
+    optional: { text: t.badgeOptional, colors: 'bg-slate-50 text-slate-500 border-slate-200', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    ifavailable: { text: t.badgeIfAvailable, colors: 'bg-slate-50 text-slate-500 border-slate-200', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    anyone: { text: t.badgeAnyOne, colors: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: 'M5 13l4 4L19 7' },
+    mandatory: { text: t.badgeMandatory, colors: 'bg-red-50 text-red-700 border-red-100', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
   }[type];
   if (isPrint) return <span className="print-badge">[{config.text}]</span>;
   return (
@@ -389,7 +389,7 @@ const DocBadge: React.FC<{ type: BadgeType; isPrint?: boolean }> = ({ type, isPr
   );
 };
 
-const DeclarationCard: React.FC<{ title: string; instruction: string; fileName: string; downloadUrl: string; downloadLabel: string }> = ({ title, instruction, fileName, downloadUrl, downloadLabel }) => (
+const DeclarationCard: React.FC<{ title: string; instruction: string; fileName: string; downloadUrl: string; downloadLabel: string; t: any }> = ({ title, instruction, fileName, downloadUrl, downloadLabel, t }) => (
   <div className="bg-white border border-slate-100 p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-200 transition-all group flex flex-col">
     <div className="mb-2.5">
       <h4 className="font-black text-slate-800 text-[12px] leading-tight group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-4">{title}</h4>
@@ -410,10 +410,10 @@ const DeclarationCard: React.FC<{ title: string; instruction: string; fileName: 
     </a>
 
     <div className="mt-auto pt-3 border-t border-slate-50 flex flex-wrap gap-1.5">
-      <span className="text-[7px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-widest border border-slate-100">PDF ONLY</span>
-      <span className="text-[7px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-widest border border-slate-100">MAX 250 KB</span>
-      <span className="text-[7px] font-black bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-tight border border-blue-100">ONE PDF</span>
-      <span className="text-[7px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded uppercase tracking-tight italic border border-blue-100">FILE: {fileName}</span>
+      <span className="text-[7px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-widest border border-slate-100">{t.badgePdfOnly}</span>
+      <span className="text-[7px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-widest border border-slate-100">{t.badgeMax250}</span>
+      <span className="text-[7px] font-black bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-tight border border-blue-100">{t.badgeOnePdf}</span>
+      <span className="text-[7px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded uppercase tracking-tight italic border border-blue-100">{t.fileLabel}: {fileName}</span>
     </div>
   </div>
 );
@@ -485,7 +485,7 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     const docs: DocItem[] = [];
     docs.push({ name: t.docDomicileCert });
     if (state.category === 'Open' && state.isHosteller) {
-      docs.push({ name: 'Alpabhudharak Certificate / Job Card', badge: 'anyone' });
+      docs.push({ name: t.docAlpabhudharak, badge: 'anyone' });
     }
     return docs;
   }, [state.category, state.isHosteller, t]);
@@ -503,9 +503,10 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     const docs: DocItem[] = [];
     
     // 1. Bonafide / Fees
-    docs.push({ name: t.docAdmissionBonafide });
     if (state.category === 'Open') {
-      docs.push({ name: t.docFeesReceipt, badge: 'merge' });
+      docs.push({ name: t.docAdmissionBonafideFees, badge: 'merge' });
+    } else {
+      docs.push({ name: t.docAdmissionBonafide });
     }
 
     // 2. Allotment Letter
@@ -520,24 +521,24 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
 
     if (!isFresh) {
       if (isDPharm || state.courseType === CourseType.Poly_Diploma) {
-        if (state.currentYear === 2) docs.push({ name: '1st Year Marksheet', badge: 'onepdf' });
-        if (state.currentYear === 3) docs.push({ name: '2nd Year Marksheet', badge: 'onepdf' });
+        if (state.currentYear === 2) docs.push({ name: t.marksheet1stYear, badge: 'onepdf' });
+        if (state.currentYear === 3) docs.push({ name: t.marksheet2ndYear, badge: 'onepdf' });
       } else if (state.isDirectSecondYear) {
         if (state.currentYear! >= 3) {
-          docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge' });
+          docs.push({ name: t.marksheet2ndYearSem, badge: 'merge' });
         }
         if (state.currentYear! >= 4) {
-          docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge' });
+          docs.push({ name: t.marksheet3rdYearSem, badge: 'merge' });
         }
       } else {
         if (state.currentYear! >= 2) {
-          docs.push({ name: '1st Year Marksheet (Sem 1 + Sem 2)', badge: 'merge' });
+          docs.push({ name: t.marksheet1stYearSem, badge: 'merge' });
         }
         if (state.currentYear! >= 3) {
-          docs.push({ name: '2nd Year Marksheet (Sem 3 + Sem 4)', badge: 'merge' });
+          docs.push({ name: t.marksheet2ndYearSem, badge: 'merge' });
         }
         if (state.currentYear! >= 4) {
-          docs.push({ name: '3rd Year Marksheet (Sem 5 + Sem 6)', badge: 'merge' });
+          docs.push({ name: t.marksheet3rdYearSem, badge: 'merge' });
         }
       }
     }
@@ -632,12 +633,12 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
 
   const handleShareOnWhatsApp = () => {
     const mode = isFresh ? t.freshApp : t.renewalApp;
-    const yearSuffix = state.currentYear === 1 ? 'st' : state.currentYear === 2 ? 'nd' : state.currentYear === 3 ? 'rd' : 'th';
+    const yearSuffix = state.currentYear === 1 ? t.st : state.currentYear === 2 ? t.nd : state.currentYear === 3 ? t.rd : t.th;
     const hostelStatus = state.isHosteller ? t.yes : t.no;
     
     let message = `*${t.waChecklistHeader}*\n\n`;
     message += `🎓 *Course:* ${state.courseType || state.stream}\n`;
-    message += `📅 *Year:* ${state.currentYear}${yearSuffix} Year\n`;
+    message += `📅 *Year:* ${state.currentYear}${yearSuffix} ${t.yearLabel}\n`;
     message += `🏷️ *Category:* ${state.category}\n`;
     message += `📝 *Mode:* ${mode}\n`;
     if (!isASC) {
@@ -670,13 +671,13 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       {printArea && createPortal(
         <div className="space-y-12">
           <header className="border-b-4 border-black pb-8 mb-8">
-            <h1 className="text-4xl font-black uppercase tracking-tighter mb-4 text-black">MahaDBT Scholarship Checklist</h1>
-            <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-8">Pathrikar Campus Assistance Output</p>
+            <h1 className="text-4xl font-black uppercase tracking-tighter mb-4 text-black">{t.printTitle}</h1>
+            <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-8">{t.printSubtitle}</p>
             <div className="grid grid-cols-2 gap-y-6 gap-x-12 border-t border-slate-200 pt-6">
-              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">Target Course</span><span className="text-base font-black text-black leading-tight">{state.courseType || state.stream}</span></div>
-              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">Caste Category</span><span className="text-base font-black text-black leading-tight">{state.category}</span></div>
-              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">Academic Year</span><span className="text-base font-black text-black leading-tight">{state.currentYear}{state.currentYear === 1 ? 'st' : state.currentYear === 2 ? 'nd' : state.currentYear === 3 ? 'rd' : 'th'} Year</span></div>
-              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">Application Mode</span><span className="text-base font-black text-black leading-tight">{isFresh ? "FRESH APPLICATION" : "RENEWAL APPLICATION"}</span></div>
+              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">{t.printTargetCourse}</span><span className="text-base font-black text-black leading-tight">{state.courseType || state.stream}</span></div>
+              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">{t.printCasteCategory}</span><span className="text-base font-black text-black leading-tight">{state.category}</span></div>
+              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">{t.printAcademicYear}</span><span className="text-base font-black text-black leading-tight">{state.currentYear}{state.currentYear === 1 ? t.st : state.currentYear === 2 ? t.nd : state.currentYear === 3 ? t.rd : t.th} {t.yearLabel}</span></div>
+              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">{t.printAppMode}</span><span className="text-base font-black text-black leading-tight">{isFresh ? t.freshAppCaps : t.renewalAppCaps}</span></div>
             </div>
           </header>
           <div className="space-y-10">
@@ -701,8 +702,8 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
                   {section.docs?.filter(doc => doc.name).map((doc, dIdx) => (
                     <div key={dIdx} className="print-doc-item">
                       <span className="print-checkbox"></span>
-                      <span className="text-sm font-black uppercase">
-                        {doc.name}{doc.badge && <DocBadge type={doc.badge} isPrint />}
+                      <span className="text-sm font-black uppercase whitespace-pre-line">
+                        {doc.name}{doc.badge && <DocBadge type={doc.badge} isPrint t={t} />}
                       </span>
                     </div>
                   ))}
@@ -711,8 +712,8 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
             })}
           </div>
           <footer className="mt-12 pt-8 border-t border-black text-center">
-            <p className="text-sm font-black uppercase tracking-widest text-black mb-2">Final verification at college office.</p>
-            <p className="text-[9px] text-slate-500 uppercase tracking-tighter">Generated on {new Date().toLocaleDateString()}</p>
+            <p className="text-sm font-black uppercase tracking-widest text-black mb-2">{t.printFooterNote}</p>
+            <p className="text-[9px] text-slate-500 uppercase tracking-tighter">{t.printGeneratedOn} {new Date().toLocaleDateString()}</p>
           </footer>
         </div>, printArea
       )}
@@ -723,7 +724,7 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
           <div className="flex flex-col items-start sm:items-end shrink-0">
             <button ref={printBtnRef} onClick={handlePrint} className={`inline-flex items-center space-x-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-500 rounded-lg transition-all border border-slate-200/60 shadow-sm cursor-pointer group ${shouldAnimate ? 'animate-soft-pulse' : ''}`}>
               <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 00-2 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-              <span className="text-[9px] font-bold whitespace-nowrap tracking-tight">Print Checklist</span>
+              <span className="text-[9px] font-bold whitespace-nowrap tracking-tight">{t.btnPrint}</span>
             </button>
           </div>
         </div>
@@ -731,7 +732,7 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
       </header>
 
       <div className="p-5 bg-[#1e3a8a] text-white rounded-2xl text-left relative overflow-hidden shadow-xl shadow-blue-900/10 no-print">
-        <h4 className="text-blue-300 font-black text-[9px] uppercase tracking-[0.4em] mb-4">Submission Protocol</h4>
+        <h4 className="text-blue-300 font-black text-[9px] uppercase tracking-[0.4em] mb-4">{t.protocolTitle}</h4>
         <ul className="space-y-2.5 text-[11px] font-bold leading-relaxed opacity-90">
           <li className="flex items-start space-x-2.5"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span>{t.rulePdf}</span></li>
           <li className="flex items-start space-x-2.5"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span>{t.ruleSize}</span></li>
@@ -757,7 +758,7 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
                 </div>
                 <div className="p-5 space-y-3">
                   {declarationForms?.map((decl, idx) => (
-                    <DeclarationCard key={idx} {...decl} downloadLabel={t.downloadForm} />
+                    <DeclarationCard key={idx} {...decl} downloadLabel={t.downloadForm} t={t} />
                   ))}
                 </div>
               </section>
@@ -783,10 +784,10 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
                     <div key={dIdx} className="flex items-start space-x-3 group">
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-600/30 mt-1.5 shrink-0 group-hover:bg-blue-600 transition-colors" />
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-black text-slate-700 text-[11px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-normal break-words flex items-center flex-wrap gap-1.5">
-                          {doc.name}{doc.badge && <DocBadge type={doc.badge} />}
+                        <h4 className="font-black text-slate-700 text-[11px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-pre-line break-words flex items-center flex-wrap gap-1.5">
+                          {doc.name}{doc.badge && <DocBadge type={doc.badge} t={t} />}
                         </h4>
-                        {doc.fileName && <span className="text-[8px] font-bold text-blue-600/60 block mt-0.5 lowercase italic">File: {doc.fileName}</span>}
+                        {doc.fileName && <span className="text-[8px] font-bold text-blue-600/60 block mt-0.5 lowercase italic">{t.fileLabel}: {doc.fileName}</span>}
                       </div>
                     </div>
                   ))}
