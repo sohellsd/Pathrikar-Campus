@@ -1,37 +1,65 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { 
-  ShieldCheck, 
-  IndianRupee, 
-  Home, 
-  CreditCard, 
-  GraduationCap, 
-  History, 
-  Building2, 
-  FileText, 
-  LogOut, 
-  BookOpen 
+import {
+  ShieldCheck,
+  CreditCard,
+  Smartphone,
+  Check,
+  ChevronRight,
+  ArrowLeft,
+  ExternalLink,
+  GraduationCap,
+  Home,
+  IndianRupee,
+  FileText,
+  Building2,
+  LogOut,
+  History,
+  FileDown,
+  RotateCcw,
+  Info,
+  CheckCircle2,
+  Sparkles,
+  Layers
 } from 'lucide-react';
-import { Stream, CourseType, Category, AppState, Language } from './types';
-import { StreamIcons } from './constants';
+import { Stream, CourseType, Category, AppState, Language, DsyQualification } from './types';
 import { translations } from './translations';
+import { generateChecklistPdf } from './pdfGenerator';
 
-const PERSISTENCE_KEY = 'mahadbt_assist_state_v4';
+const PERSISTENCE_KEY = 'mahadbt_assist_state_v6';
 
-// Strict TypeScript definitions for document structures
-type BadgeType = 'merge' | 'onepdf' | 'optional' | 'ifavailable' | 'anyone' | 'mandatory';
+type BadgeType = 'mandatory' | 'required_otp' | 'anyone' | 'dsy' | 'onepdf' | 'merge' | 'optional';
 
 interface DocItem {
   name: string;
+  subName?: string;
   badge?: BadgeType;
   fileName?: string;
+  instruction?: string;
+  isDsyQualifying?: boolean;
+  dsyCourse?: 'polytechnic' | 'be_btech';
+}
+
+interface FlatDocItem {
+  id: string;
+  name: string;
+  subName?: string;
+  category: string;
+  badge?: BadgeType;
+  fileName?: string;
+  instruction?: string;
+  isDsyQualifying?: boolean;
+  dsyCourse?: 'polytechnic' | 'be_btech';
 }
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
     const saved = localStorage.getItem(PERSISTENCE_KEY);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error('Failed to parse saved state', e); }
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved state', e);
+      }
     }
     return {
       language: 'en',
@@ -43,7 +71,7 @@ const App: React.FC = () => {
       isHosteller: false,
       hadGap: false,
       isDirectSecondYear: false,
-      loginReady: { username: false, password: false, mobile: false },
+      dsyQualification: null,
     };
   });
 
@@ -55,33 +83,31 @@ const App: React.FC = () => {
     document.documentElement.lang = state.language;
   }, [state.language]);
 
-  const [activeVideo, setActiveVideo] = useState<{ title: string; desc: string; url?: string } | null>(null);
-
   const t = translations[state.language];
-  const isRenewal = useMemo(() => state.currentYear !== null && state.currentYear > 1, [state.currentYear]);
-  
+
   const handleStreamSelect = (s: Stream) => {
-    const nextStepNum = (s === Stream.Pharmacy || s === Stream.Management || s === Stream.ASC || s === Stream.Engineering) ? 2 : 3;
-    setState(prev => ({ 
-      ...prev, 
-      stream: s, 
-      courseType: null, 
-      currentYear: null, 
-      category: null, 
+    setState(prev => ({
+      ...prev,
+      stream: s,
+      courseType: null,
+      currentYear: null,
+      category: null,
       isDirectSecondYear: false,
-      step: nextStepNum 
+      dsyQualification: null,
+      step: 2
     }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCourseSelect = (c: CourseType) => {
-    setState(prev => ({ 
-      ...prev, 
-      courseType: c, 
-      currentYear: null, 
-      category: null, 
+    setState(prev => ({
+      ...prev,
+      courseType: c,
+      currentYear: null,
+      category: null,
       isDirectSecondYear: false,
-      step: 3 
+      dsyQualification: null,
+      step: 3
     }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -93,24 +119,11 @@ const App: React.FC = () => {
 
   const nextStep = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (state.step === 4) {
-      if (isRenewal) setState(prev => ({ ...prev, step: 5 }));
-      else setState(prev => ({ ...prev, step: 6 }));
-      return;
-    }
-    setState(prev => ({ ...prev, step: Math.min(6, prev.step + 1) }));
+    setState(prev => ({ ...prev, step: Math.min(5, prev.step + 1) }));
   };
 
   const prevStep = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (state.step === 3 && (state.stream !== Stream.Pharmacy && state.stream !== Stream.Management && state.stream !== Stream.ASC)) {
-      setState(prev => ({ ...prev, step: 1 }));
-      return;
-    }
-    if (state.step === 6 && !isRenewal) {
-      setState(prev => ({ ...prev, step: 4 }));
-      return;
-    }
     setState(prev => ({ ...prev, step: Math.max(1, prev.step - 1) }));
   };
 
@@ -125,7 +138,7 @@ const App: React.FC = () => {
       isHosteller: false,
       hadGap: false,
       isDirectSecondYear: false,
-      loginReady: { username: false, password: false, mobile: false },
+      dsyQualification: null,
     };
     setState(newState);
     localStorage.removeItem(PERSISTENCE_KEY);
@@ -133,214 +146,755 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col selection:bg-blue-100">
-      {activeVideo && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-6 no-print video-overlay" onClick={() => setActiveVideo(null)}>
-          <div className="bg-white w-full max-sm rounded-3xl overflow-hidden shadow-2xl relative border border-slate-200" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setActiveVideo(null)} className="absolute top-4 right-4 z-10 bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition-colors">
-              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <div className="aspect-[9/16] bg-slate-900 flex flex-col items-center justify-center p-10 text-center text-white">
-              <h3 className="text-xl font-black mb-4 tracking-tight">{activeVideo.title}</h3>
-              <p className="text-sm opacity-60 mb-8 italic">{activeVideo.desc}</p>
-              {activeVideo.url && (
-                <a href={activeVideo.url} target="_blank" rel="noopener noreferrer" className="bg-white text-blue-900 px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-colors">{t.openTutorial}</a>
-              )}
+    <div className="bg-[#F7F8FA] text-[#0F172A] flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900 antialiased">
+      {/* Top App Bar - Fixed/Sticky Mobile Header */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/70 pt-safe no-select">
+        <div className="max-w-xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          {/* Logo & Product Brand */}
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center shadow-xs">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div>
+              <span className="text-sm font-black tracking-tight text-slate-900 block leading-tight">MahaScholar</span>
+              <span className="text-[10px] font-semibold text-slate-400 block leading-none">Document Guide</span>
             </div>
           </div>
-        </div>
-      )}
 
-      <header className="bg-[#1e3a8a] text-white pt-4 pb-10 px-6 sticky top-0 z-40 pt-safe no-select shadow-xl rounded-b-3xl no-print">
-        <div className="max-w-2xl mx-auto flex flex-col">
-          <div className="flex items-center justify-between mb-4 min-h-[40px]">
-            <div className="w-1" />
-            <div className="flex bg-blue-900/50 p-1 rounded-2xl backdrop-blur-md border border-white/10">
-              {(['en', 'hi', 'mr'] as Language[]).map(lang => (
-                <button key={lang} onClick={() => setState(prev => ({ ...prev, language: lang }))} className={`px-3 py-1 text-[10px] font-black rounded-xl transition-all duration-300 ${state.language === lang ? 'bg-white text-blue-900 shadow-lg' : 'text-blue-200/50 hover:text-white'}`}>
-                  {lang === 'en' ? t.langEn : lang === 'hi' ? t.langHi : t.langMr}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-col text-left mb-6">
-            <h1 className="font-black text-xl tracking-tighter leading-none uppercase">{t.title}</h1>
-            <p className="text-[9px] font-bold text-blue-200/50 uppercase tracking-widest mt-1.5">{t.subtitle}</p>
-          </div>
-          <div className="flex flex-col items-end space-y-1.5">
-            <span className="text-[8px] font-black text-white uppercase tracking-widest leading-none">{t.step} {state.step} {t.of} 6</span>
-            <div className="flex w-full space-x-1.5">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className={`h-[3px] flex-grow rounded-full transition-all duration-500 ${state.step >= i ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'bg-blue-400/30'}`} />
-              ))}
-            </div>
-          </div>
+          {/* Segmented Language Switcher */}
+          <nav aria-label="Language" className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/60 shadow-inner">
+            {(['en', 'hi', 'mr'] as Language[]).map(lang => (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => setState(prev => ({ ...prev, language: lang }))}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all duration-200 min-h-[30px] flex items-center justify-center ${
+                  state.language === lang
+                    ? 'bg-white text-slate-950 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                {lang === 'en' ? t.langEn : lang === 'hi' ? t.langHi : t.langMr}
+              </button>
+            ))}
+          </nav>
         </div>
+
+        {/* Step Progress Bar & Step Label */}
+        {state.step <= 4 && (
+          <div className="max-w-xl mx-auto px-4 sm:px-6 pb-2.5 pt-0.5">
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+              <span>{t.step} {state.step} {t.of} 4</span>
+              <span className="text-slate-600 font-extrabold">
+                {state.step === 1 && t.selectStream}
+                {state.step === 2 && t.selectCourse}
+                {state.step === 3 && t.selectCategory}
+                {state.step === 4 && t.selectYear}
+              </span>
+            </div>
+            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-indigo-600 transition-all duration-400 ease-out rounded-full"
+                style={{ width: `${(state.step / 4) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
       </header>
 
-      <main className="max-w-2xl mx-auto relative z-30 flex-grow w-full -mt-4 px-0 sm:px-4">
-        <div className="bg-white min-h-[500px] p-6 pt-6 rounded-t-3xl sm:rounded-3xl border-x border-t border-slate-100 overflow-hidden pb-12 shadow-[0_-10px_20px_rgba(0,0,0,0.02)] step-container">
-          <div className="step-enter">
-            {state.step > 1 && (
-              <button 
-                onClick={prevStep} 
-                className="flex items-center space-x-1 text-slate-400 hover:text-blue-900 transition-all mb-4 active:translate-x-[-2px] group py-1 pr-4 rounded-lg"
-                style={{ minHeight: '32px' }}
-              >
-                <svg className="w-4 h-4 transition-transform group-hover:translate-x-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M15 19l-7-7 7-7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className="font-bold text-[10px] uppercase tracking-widest">{t.goBack}</span>
-              </button>
-            )}
-            {state.step === 1 && <StepStream selected={state.stream} onSelect={handleStreamSelect} t={t} />}
-            {state.step === 2 && <StepCourse selected={state.courseType} stream={state.stream} onSelect={handleCourseSelect} t={t} />}
-            {state.step === 3 && <StepCategory selected={state.category} onSelect={handleCategorySelect} t={t} />}
-            {state.step === 4 && <StepYear state={state} onUpdate={updates => setState(prev => {
-                if ('currentYear' in updates) {
-                  return { ...prev, ...updates, isDirectSecondYear: false };
-                }
-                return { ...prev, ...updates };
-              })} onContinue={nextStep} t={t} />}
-            {state.step === 5 && <StepLoginCheck ready={state.loginReady} onToggle={field => setState(prev => ({ ...prev, loginReady: { ...prev.loginReady, [field]: !prev.loginReady[field] } }))} onContinue={nextStep} t={t} />}
-            {state.step === 6 && <StepDocumentList state={state} onRestart={handleRestart} onBack={prevStep} onOpenVideo={(title, desc, url) => setActiveVideo({ title, desc, url })} t={t} />}
-          </div>
+      {/* Main Content Area - Constrained to 640px for Android-First centered layout */}
+      <main className="w-full max-w-xl mx-auto px-4 sm:px-6 pt-5 pb-0">
+        {/* Back Button */}
+        {state.step > 1 && (
+          <button
+            type="button"
+            onClick={prevStep}
+            className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors py-2 pr-3 mb-4 rounded-lg active:scale-95 touch-manipulation min-h-[44px]"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>{t.back}</span>
+          </button>
+        )}
+
+        {/* Step Screens */}
+        <div className="step-enter">
+          {state.step === 1 && (
+            <StepStream selected={state.stream} onSelect={handleStreamSelect} t={t} />
+          )}
+
+          {state.step === 2 && (
+            <StepCourse
+              stream={state.stream}
+              selected={state.courseType}
+              onSelect={handleCourseSelect}
+              t={t}
+            />
+          )}
+
+          {state.step === 3 && (
+            <StepCategory
+              selected={state.category}
+              onSelect={handleCategorySelect}
+              t={t}
+            />
+          )}
+
+          {state.step === 4 && (
+            <StepYear
+              state={state}
+              onUpdate={updates =>
+                setState(prev => {
+                  if ('currentYear' in updates) {
+                    return { ...prev, ...updates, isDirectSecondYear: false, dsyQualification: null };
+                  }
+                  return { ...prev, ...updates };
+                })
+              }
+              onContinue={nextStep}
+              t={t}
+            />
+          )}
+
+          {state.step === 5 && (
+            <StepDocumentList
+              state={state}
+              onRestart={handleRestart}
+              onUpdateQualification={q => setState(prev => ({ ...prev, dsyQualification: q }))}
+              t={t}
+            />
+          )}
         </div>
       </main>
 
-      <footer className="w-full py-10 flex flex-col items-center bg-transparent pb-safe no-select no-print">
-        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mb-3 opacity-50">{t.footerText}</p>
-        <a href="https://www.instagram.com/sohellsd/" target="_blank" rel="noopener noreferrer" className="text-blue-800 font-black text-xs tracking-tight uppercase hover:text-blue-600 transition-colors">Sohel Sayyad</a>
-      </footer>
-    </div>
-  );
-};
-
-// Internal Step Components
-
-const StepStream: React.FC<{ selected: Stream | null; onSelect: (s: Stream) => void; t: any; }> = ({ selected, onSelect, t }) => {
-  const streams = [
-    { value: Stream.Engineering, label: t.engLabel, tip: t.engTip },
-    { value: Stream.Pharmacy, label: t.pharmLabel, tip: t.pharmTip },
-    { value: Stream.Nursing, label: t.nursLabel, tip: t.nursTip },
-    { value: Stream.Management, label: t.mgmtLabel, tip: t.mgmtTip },
-    { value: Stream.ASC, label: t.ascLabel, tip: t.ascTip },
-  ];
-  return (
-    <div className="space-y-6">
-      <header className="space-y-1.5 text-left">
-        <h2 className="text-xl font-black text-slate-900 tracking-tight leading-tight">{t.selectStream}</h2>
-        <p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectStreamSub}</p>
-      </header>
-      <div className="space-y-2.5">
-        {streams.map(s => (
-          <button key={s.value} onClick={() => onSelect(s.value)} className={`w-full flex items-center p-3.5 rounded-xl border-2 transition-all active:scale-[0.98] text-left relative ${selected === s.value ? 'border-blue-600 bg-blue-50/30' : 'border-slate-50 bg-[#fafafa] hover:border-slate-200'}`}>
-            <div className={`p-2.5 rounded-lg transition-all ${selected === s.value ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white text-slate-300'}`}>{StreamIcons[s.value as keyof typeof StreamIcons]}</div>
-            <div className="ml-3.5 flex-grow"><span className={`font-black text-[14px] tracking-tight block ${selected === s.value ? 'text-blue-900' : 'text-slate-700'}`}>{s.label}</span><span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{s.tip}</span></div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const StepCourse: React.FC<{ selected: CourseType | null; stream: Stream | null; onSelect: (c: CourseType) => void; t: any; }> = ({ selected, stream, onSelect, t }) => {
-  if (stream === Stream.Engineering) {
-    return (
-      <div className="space-y-6">
-        <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.selectCourse}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectCourseSub}</p></header>
-        <div className="grid grid-cols-1 gap-3 no-select">
-          {[
-            { value: CourseType.BE_BTech, label: t.beBtech },
-            { value: CourseType.Poly_Diploma, label: t.polytechnic }
-          ].map(item => (
-            <button 
-              key={item.value} 
-              onClick={() => onSelect(item.value)} 
-              className={`w-full flex items-center p-5 rounded-xl border-2 transition-all active:scale-[0.98] text-left ${selected === item.value ? 'border-blue-600 bg-blue-50/30 shadow-md' : 'border-slate-50 bg-[#fafafa]'}`}
+      {/* Footer for Steps 1-4 (Borderless, compact 12px text) */}
+      {state.step < 5 && (
+        <footer className="w-full mt-3 pb-2 text-center text-[12px] text-slate-400 font-normal">
+          <p>
+            Created by{' '}
+            <a
+              href="https://www.instagram.com/sohellsd/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-500 hover:text-slate-700 transition-colors"
             >
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === item.value ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-200' : 'border-slate-200 bg-white'}`}>
-                {selected === item.value && <div className="w-2 h-2 bg-white rounded-full" />}
-              </div>
-              <div className="ml-4">
-                <span className={`font-black text-sm uppercase tracking-tight ${selected === item.value ? 'text-blue-900' : 'text-slate-700'}`}>
-                  {item.label}
-                </span>
-              </div>
-            </button>
-          ))}
+              Sohel Sayyad
+            </a>
+          </p>
+        </footer>
+      )}
+    </div>
+  );
+};
+
+/* ==========================================================================
+   BADGE COMPONENT
+   ========================================================================== */
+
+const DocBadge: React.FC<{ type: BadgeType; labelOverride?: string; t?: any }> = ({
+  type,
+  labelOverride,
+  t
+}) => {
+  const configs: Record<BadgeType, { text: string; style: string }> = {
+    mandatory: {
+      text: labelOverride || (t?.badgeMandatory ? t.badgeMandatory : 'REQUIRED'),
+      style: 'bg-[#FEECEC] text-[#B42318]'
+    },
+    required_otp: {
+      text: labelOverride || (t?.aadhaarMobileBadge ? t.aadhaarMobileBadge : 'FOR OTP'),
+      style: 'bg-[#FFF4DB] text-[#8A5A00]'
+    },
+    anyone: {
+      text: labelOverride || (t?.badgeAnyOne ? t.badgeAnyOne : 'ANY ONE'),
+      style: 'bg-indigo-50 text-indigo-700'
+    },
+    dsy: {
+      text: labelOverride || 'DSY',
+      style: 'bg-amber-50 text-amber-800'
+    },
+    onepdf: {
+      text: labelOverride || (t?.badgeOnePdf ? t.badgeOnePdf : 'ONE PDF'),
+      style: 'bg-sky-50 text-sky-700'
+    },
+    merge: {
+      text: labelOverride || (t?.badgeMerge ? t.badgeMerge : 'Create One PDF'),
+      style: 'bg-sky-50 text-sky-700'
+    },
+    optional: {
+      text: labelOverride || (t?.badgeOptional ? t.badgeOptional : 'OPTIONAL'),
+      style: 'bg-slate-100 text-slate-600'
+    }
+  };
+
+  const item = configs[type] || configs.mandatory;
+
+  return (
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] sm:text-[11px] font-semibold leading-[14px] ${item.style} shrink-0`}
+    >
+      {item.text}
+    </span>
+  );
+};
+
+/* ==========================================================================
+   DOCUMENT ROW COMPONENT (Informational List-Row System - NO Checkboxes)
+   ========================================================================== */
+
+interface DocumentRowProps {
+  name: string;
+  subName?: string;
+  badge?: BadgeType;
+  badgeLabel?: string;
+  fileName?: string;
+  instruction?: string;
+  isDsyQualifying?: boolean;
+  dsyCourse?: 'polytechnic' | 'be_btech';
+  selectedDsyQual?: DsyQualification | null;
+  onSelectDsyQual?: (q: DsyQualification) => void;
+  t: any;
+}
+
+const DocumentRow: React.FC<DocumentRowProps> = ({
+  name,
+  subName,
+  badge,
+  badgeLabel,
+  fileName,
+  instruction,
+  isDsyQualifying,
+  dsyCourse,
+  selectedDsyQual,
+  onSelectDsyQual,
+  t
+}) => {
+  return (
+    <div className="py-3 px-1 text-left first:pt-2 last:pb-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline flex-wrap gap-2">
+            <span className="text-[14px] sm:text-[15px] font-semibold text-slate-900 leading-snug">
+              {name}
+            </span>
+            {badge && <DocBadge type={badge} labelOverride={badgeLabel} t={t} />}
+            {fileName && (
+              <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                {fileName}
+              </span>
+            )}
+          </div>
+
+          {/* SubName or instruction underneath */}
+          {subName && (
+            <p className="text-[12px] font-medium text-indigo-700 mt-0.5 leading-normal">
+              {subName}
+            </p>
+          )}
+
+          {instruction && (
+            <p className="text-[11px] text-slate-500 mt-0.5 leading-normal">
+              {instruction}
+            </p>
+          )}
         </div>
       </div>
-    );
-  }
 
-  let options: CourseType[] = [];
-  if (stream === Stream.Pharmacy) options = [CourseType.BPharm, CourseType.DPharm, CourseType.MPharm];
-  else if (stream === Stream.Management) options = [CourseType.BBA, CourseType.BCA, CourseType.MBA, CourseType.MCA];
-  else if (stream === Stream.ASC) options = [CourseType.BA, CourseType.BSc, CourseType.BCom, CourseType.MA, CourseType.MSc, CourseType.MCom];
-  else if (stream === Stream.Nursing) options = [CourseType.BScNursing, CourseType.GNM];
-  return (
-    <div className="space-y-6">
-      <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.selectCourse}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectCourseSub}</p></header>
-      <div className="space-y-2.5 no-select">{options.map(c => (
-          <button key={c} onClick={() => onSelect(c)} className={`w-full flex items-center p-4 rounded-xl border-2 transition-all active:scale-[0.98] text-left ${selected === c ? 'border-blue-600 bg-blue-50/30' : 'border-slate-50 bg-[#fafafa]'}`}>
-            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === c ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-200' : 'border-slate-200 bg-white'}`}> {selected === c && <div className="w-1.5 h-1.5 bg-white rounded-full" />}</div>
-            <div className="ml-3.5"><span className={`font-black text-xs uppercase tracking-tight ${selected === c ? 'text-blue-900' : 'text-slate-700'}`}>{c}</span></div>
-          </button>
-        ))}</div>
+      {/* DSY Qualification Selector (if applicable) */}
+      {isDsyQualifying && (
+        <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+            {t.dsySelectQual}
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            {dsyCourse === 'polytechnic' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onSelectDsyQual?.('iti')}
+                  className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                    selectedDsyQual === 'iti' || !selectedDsyQual
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {t.dsyItiMarksheet}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectDsyQual?.('12th')}
+                  className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                    selectedDsyQual === '12th'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {t.dsy12thMarksheet}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onSelectDsyQual?.('diploma')}
+                  className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                    selectedDsyQual === 'diploma' || !selectedDsyQual
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {t.dsyDiplomaMarksheet}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectDsyQual?.('equivalent')}
+                  className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border text-center cursor-pointer ${
+                    selectedDsyQual === 'equivalent'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {t.dsyEquivalentDoc}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-const StepCategory: React.FC<{ selected: Category | null; onSelect: (c: Category) => void; t: any; }> = ({ selected, onSelect, t }) => {
-  const categories: {label: string, value: Category}[] = [
-    { label: t.catOpen, value: 'Open' }, 
-    { label: t.catOBC, value: 'OBC' }, 
-    { label: t.catSC, value: 'SC' }, 
-    { label: t.catST, value: 'ST' }, 
-    { label: t.catSBC, value: 'SBC' }, 
-    { label: t.catVJNT, value: 'VJNT' }, 
-    { label: t.catSEBC, value: 'SEBC' }, 
-    { label: t.catMinority, value: 'Minority' },
+/* ==========================================================================
+   STEP 1: STREAM SELECTION (Clean List with tactile touch targets)
+   ========================================================================== */
+
+const StepStream: React.FC<{
+  selected: Stream | null;
+  onSelect: (s: Stream) => void;
+  t: any;
+}> = ({ selected, onSelect, t }) => {
+  const streams = [
+    {
+      id: Stream.Engineering,
+      title: t.engLabel,
+      subtitle: t.engTip,
+      icon: <GraduationCap className="w-5 h-5 text-indigo-600" />
+    },
+    {
+      id: Stream.Pharmacy,
+      title: t.pharmLabel,
+      subtitle: t.pharmTip,
+      icon: <FileText className="w-5 h-5 text-emerald-600" />
+    },
+    {
+      id: Stream.Management,
+      title: t.mgmtLabel,
+      subtitle: t.mgmtTip,
+      icon: <Building2 className="w-5 h-5 text-blue-600" />
+    },
+    {
+      id: Stream.Nursing,
+      title: t.nursLabel,
+      subtitle: t.nursTip,
+      icon: <ShieldCheck className="w-5 h-5 text-rose-600" />
+    },
+    {
+      id: Stream.ASC,
+      title: t.ascLabel,
+      subtitle: t.ascTip,
+      icon: <History className="w-5 h-5 text-violet-600" />
+    }
   ];
+
   return (
-    <div className="space-y-6">
-      <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.selectCategory}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectCategorySub}</p></header>
-      <div className="grid grid-cols-1 gap-2.5 no-select">{categories.map(cat => (
-          <button key={cat.value} onClick={() => onSelect(cat.value)} className={`p-4 rounded-xl border-2 font-black transition-all text-left flex items-center justify-between active:scale-[0.98] ${selected === cat.value ? 'border-blue-600 bg-blue-50/30 text-blue-900' : 'border-slate-50 bg-[#fafafa] text-slate-600'}`}>
-            <span className="text-xs uppercase tracking-tight">{cat.label}</span>
-          </button>
-        ))}</div>
+    <div className="space-y-4">
+      <div className="mb-6">
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          {t.selectStream}
+        </h2>
+        <p className="text-sm font-medium text-slate-500 mt-1">
+          {t.selectStreamSub}
+        </p>
+      </div>
+
+      <div className="space-y-2.5">
+        {streams.map(s => {
+          const isChosen = selected === s.id;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => onSelect(s.id)}
+              className={`w-full p-4 rounded-2xl border text-left transition-all duration-200 flex items-center justify-between min-h-[64px] active:scale-[0.99] touch-manipulation ${
+                isChosen
+                  ? 'bg-indigo-50/50 border-indigo-600 shadow-xs'
+                  : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-xs'
+              }`}
+            >
+              <div className="flex items-center space-x-3.5 min-w-0 pr-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                  {s.icon}
+                </div>
+                <div className="min-w-0">
+                  <span className="text-base font-bold text-slate-900 block leading-tight">
+                    {s.title}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400 mt-0.5 block truncate">
+                    {s.subtitle}
+                  </span>
+                </div>
+              </div>
+              <div className="shrink-0 text-slate-400">
+                <ChevronRight className="w-5 h-5" />
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };
 
-const StepYear: React.FC<{ state: AppState; onUpdate: (updates: Partial<AppState>) => void; onContinue: () => void; t: any; }> = ({ state, onUpdate, onContinue, t }) => {
-  const is2YearCourse = [CourseType.MPharm, CourseType.MBA, CourseType.MCA, CourseType.MA, CourseType.MSc, CourseType.MCom, CourseType.DPharm].includes(state.courseType!);
-  const is3YearCourse = [CourseType.BA, CourseType.BSc, CourseType.BCom, CourseType.BBA, CourseType.BCA, CourseType.Poly_Diploma, CourseType.GNM].includes(state.courseType!);
-  const years = is2YearCourse ? [1, 2] : is3YearCourse ? [1, 2, 3] : [1, 2, 3, 4];
-  const isMaster = [CourseType.MPharm, CourseType.MBA, CourseType.MCA, CourseType.MA, CourseType.MSc, CourseType.MCom].includes(state.courseType!);
-  const isASC = state.stream === Stream.ASC;
-  const isHostelEligible = !isASC && state.category && ['Open', 'SC', 'ST', 'SBC', 'VJNT'].includes(state.category);
-  
-  const isDirectSecondYearEligible = (
-    (state.stream === Stream.Pharmacy && state.courseType === CourseType.BPharm) ||
-    (state.stream === Stream.Engineering && state.courseType === CourseType.BE_BTech)
-  ) && state.currentYear === 2;
+/* ==========================================================================
+   STEP 2: COURSE SELECTION
+   ========================================================================== */
+
+const StepCourse: React.FC<{
+  stream: Stream | null;
+  selected: CourseType | null;
+  onSelect: (c: CourseType) => void;
+  t: any;
+}> = ({ stream, selected, onSelect, t }) => {
+  const courses: CourseType[] = useMemo(() => {
+    switch (stream) {
+      case Stream.Engineering:
+        return [CourseType.BE_BTech, CourseType.Poly_Diploma];
+      case Stream.Pharmacy:
+        return [CourseType.BPharm, CourseType.DPharm, CourseType.MPharm];
+      case Stream.Management:
+        return [CourseType.MBA, CourseType.MCA, CourseType.BBA, CourseType.BCA];
+      case Stream.Nursing:
+        return [CourseType.BScNursing, CourseType.PGNursing];
+      case Stream.ASC:
+        return [CourseType.BA, CourseType.BSc, CourseType.BCom, CourseType.MA, CourseType.MSc, CourseType.MCom];
+      default:
+        return [];
+    }
+  }, [stream]);
+
+  const getCourseSubtitle = (c: CourseType): string | undefined => {
+    if (c === CourseType.BScNursing) return t.fourYears || '4 Years';
+    if (c === CourseType.PGNursing) return t.postgraduate || 'Postgraduate';
+    return undefined;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="mb-6">
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          {t.selectCourse}
+        </h2>
+        <p className="text-sm font-medium text-slate-500 mt-1">
+          {t.selectCourseSub}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {courses.map(course => {
+          const isChosen = selected === course;
+          const subtitle = getCourseSubtitle(course);
+          return (
+            <button
+              key={course}
+              type="button"
+              onClick={() => onSelect(course)}
+              className={`p-4 rounded-2xl border text-left transition-all duration-200 flex items-center justify-between min-h-[56px] active:scale-[0.99] touch-manipulation cursor-pointer ${
+                isChosen
+                  ? 'bg-indigo-50/50 border-indigo-600 shadow-xs'
+                  : 'bg-white border-slate-200/80 hover:border-slate-300 shadow-xs'
+              }`}
+            >
+              <div className="flex flex-col min-w-0 pr-2">
+                <span className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
+                  {course}
+                </span>
+                {subtitle && (
+                  <span className="text-xs font-semibold text-slate-500 mt-0.5 block">
+                    {subtitle}
+                  </span>
+                )}
+              </div>
+              <div
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ml-3 ${
+                  isChosen ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white'
+                }`}
+              >
+                {isChosen && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ==========================================================================
+   STEP 3: CATEGORY SELECTION
+   ========================================================================== */
+
+const StepCategory: React.FC<{
+  selected: Category | null;
+  onSelect: (cat: Category) => void;
+  t: any;
+}> = ({ selected, onSelect, t }) => {
+  const categories: { id: Category; label: string }[] = [
+    { id: 'Open', label: t.catOpen },
+    { id: 'OBC', label: t.catOBC },
+    { id: 'SC', label: t.catSC },
+    { id: 'ST', label: t.catST },
+    { id: 'VJNT', label: t.catVJNT },
+    { id: 'SBC', label: t.catSBC },
+    { id: 'SEBC', label: t.catSEBC },
+    { id: 'Minority', label: t.catMinority }
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="mb-6">
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          {t.selectCategory}
+        </h2>
+        <p className="text-sm font-medium text-slate-500 mt-1">
+          {t.selectCategorySub}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5">
+        {categories.map(cat => {
+          const isChosen = selected === cat.id;
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => onSelect(cat.id)}
+              className={`p-4 rounded-2xl border text-center transition-all duration-200 min-h-[58px] flex items-center justify-center active:scale-[0.98] touch-manipulation ${
+                isChosen
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                  : 'bg-white text-slate-900 border-slate-200/80 hover:border-slate-300 shadow-xs'
+              }`}
+            >
+              <span className="text-sm sm:text-base font-bold leading-tight">
+                {cat.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ==========================================================================
+   STEP 4: YEAR, DSY, GAP & HOSTEL
+   ========================================================================== */
+
+const StepYear: React.FC<{
+  state: AppState;
+  onUpdate: (updates: Partial<AppState>) => void;
+  onContinue: () => void;
+  t: any;
+}> = ({ state, onUpdate, onContinue, t }) => {
+  const years = useMemo(() => {
+    if (state.courseType === CourseType.BE_BTech) return [1, 2, 3, 4];
+    if (state.courseType === CourseType.BPharm) return [1, 2, 3, 4];
+    if (state.courseType === CourseType.BScNursing) return [1, 2, 3, 4];
+    if (state.courseType === CourseType.DPharm) return [1, 2];
+    if (state.courseType === CourseType.Poly_Diploma) return [1, 2, 3];
+    if (state.courseType === CourseType.GNM) return [1, 2, 3];
+    if (
+      [
+        CourseType.MBA,
+        CourseType.MCA,
+        CourseType.PGNursing,
+        CourseType.MPharm,
+        CourseType.MA,
+        CourseType.MSc,
+        CourseType.MCom
+      ].includes(state.courseType!)
+    ) {
+      return [1, 2];
+    }
+    return [1, 2, 3];
+  }, [state.courseType]);
+
+  const isDirectSecondYearEligible =
+    ((state.stream === Stream.Pharmacy && state.courseType === CourseType.BPharm) ||
+      (state.stream === Stream.Engineering &&
+        (state.courseType === CourseType.BE_BTech || state.courseType === CourseType.Poly_Diploma))) &&
+    state.currentYear === 2;
+
+  const isHostelEligibleCategory =
+    state.category && ['Open', 'SC', 'ST', 'SBC', 'VJNT'].includes(state.category);
+  const isHostelEligible = state.stream !== Stream.ASC && isHostelEligibleCategory;
+  const isMaster = [
+    CourseType.MPharm,
+    CourseType.MBA,
+    CourseType.MCA,
+    CourseType.PGNursing,
+    CourseType.MA,
+    CourseType.MSc,
+    CourseType.MCom
+  ].includes(state.courseType!);
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.selectYear}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.selectYearSub}</p></header>
-      <div className="grid grid-cols-2 gap-2.5 no-select">{years.map(y => (
-          <button key={y} onClick={() => onUpdate({ currentYear: y })} className={`p-4 rounded-xl border-2 font-black text-[10px] uppercase transition-all active:scale-[0.97] ${state.currentYear === y ? 'border-blue-600 bg-blue-50/30 text-blue-900 shadow-md' : 'border-slate-50 bg-[#fafafa] text-slate-400'}`}>{y}{y === 1 ? t.st : y === 2 ? t.nd : y === 3 ? t.rd : t.th} {t.yearLabel}</button>
-        ))}</div>
-      
+      <div>
+        <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          {t.selectYear}
+        </h2>
+        <p className="text-sm font-medium text-slate-500 mt-1">
+          {t.selectYearSub}
+        </p>
+      </div>
+
+      {/* Year Selection Buttons */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        {years.map(y => {
+          const isChosen = state.currentYear === y;
+          const suffix = y === 1 ? t.st : y === 2 ? t.nd : y === 3 ? t.rd : t.th;
+          return (
+            <button
+              key={y}
+              type="button"
+              onClick={() => onUpdate({ currentYear: y })}
+              className={`p-3.5 rounded-2xl border text-center transition-all duration-200 min-h-[64px] flex flex-col items-center justify-center active:scale-[0.98] touch-manipulation ${
+                isChosen
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                  : 'bg-white text-slate-800 border-slate-200/80 hover:border-slate-300 shadow-xs'
+              }`}
+            >
+              <span className="text-base sm:text-lg font-black leading-tight">
+                {y}{suffix}
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-wider opacity-70 mt-0.5">
+                {t.yearLabel}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* DSY Conditional Question */}
       {isDirectSecondYearEligible && (
-        <div className="bg-slate-50 p-5 rounded-xl space-y-4 no-select border border-slate-200">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{t.directSecondYearQuestion}</p>
-          <div className="flex space-x-2.5">
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
+          <p className="text-xs sm:text-sm font-bold text-slate-800">
+            {t.directSecondYearQuestion}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
             {[true, false].map(v => (
-              <button key={v ? 'dsyy' : 'dsyn'} onClick={() => onUpdate({ isDirectSecondYear: v })} className={`flex-1 p-3.5 rounded-lg border-2 font-black text-[9px] transition-all uppercase ${state.isDirectSecondYear === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>
+              <button
+                key={v ? 'dsy-yes' : 'dsy-no'}
+                type="button"
+                onClick={() =>
+                  onUpdate({
+                    isDirectSecondYear: v,
+                    dsyQualification: v ? (state.courseType === CourseType.Poly_Diploma ? 'iti' : 'diploma') : null
+                  })
+                }
+                className={`py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all min-h-[44px] ${
+                  state.isDirectSecondYear === v
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                {v ? t.yes : t.no}
+              </button>
+            ))}
+          </div>
+
+          {/* DSY Qualifying choice preview */}
+          {state.isDirectSecondYear && (
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                {t.dsySelectQual}
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {state.courseType === CourseType.Poly_Diploma ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ dsyQualification: 'iti' })}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all min-h-[42px] ${
+                        state.dsyQualification === 'iti' || !state.dsyQualification
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {t.dsyItiMarksheet}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ dsyQualification: '12th' })}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all min-h-[42px] ${
+                        state.dsyQualification === '12th'
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {t.dsy12thMarksheet}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ dsyQualification: 'diploma' })}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all min-h-[42px] ${
+                        state.dsyQualification === 'diploma' || !state.dsyQualification
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {t.dsyDiplomaMarksheet}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ dsyQualification: 'equivalent' })}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all min-h-[42px] ${
+                        state.dsyQualification === 'equivalent'
+                          ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {t.dsyEquivalentDoc}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Gap Question (Year 1 only) */}
+      {state.currentYear === 1 && (
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
+          <p className="text-xs sm:text-sm font-bold text-slate-800">
+            {isMaster ? t.gapQuestionPG : t.gapQuestion}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {[true, false].map(v => (
+              <button
+                key={v ? 'gap-yes' : 'gap-no'}
+                type="button"
+                onClick={() => onUpdate({ hadGap: v })}
+                className={`py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all min-h-[44px] ${
+                  state.hadGap === v
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
                 {v ? t.yes : t.no}
               </button>
             ))}
@@ -348,181 +902,188 @@ const StepYear: React.FC<{ state: AppState; onUpdate: (updates: Partial<AppState
         </div>
       )}
 
-      {state.currentYear === 1 && (<div className="bg-slate-50 p-5 rounded-xl space-y-4 no-select border border-slate-200"><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{isMaster ? t.gapQuestionPG : t.gapQuestion}</p><div className="flex space-x-2.5">{[true, false].map(v => (<button key={v ? 'y' : 'n'} onClick={() => onUpdate({ hadGap: v })} className={`flex-1 p-3.5 rounded-lg border-2 font-black text-[9px] transition-all uppercase ${state.hadGap === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>{v ? t.yes : t.no}</button>))}</div></div>)}
-      {isHostelEligible && (<div className="bg-slate-50 p-5 rounded-xl space-y-4 no-select border border-slate-200"><p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed text-center">{t.hostelQuestion}</p><div className="flex space-x-2.5">{[true, false].map(v => (<button key={v ? 'hy' : 'hn'} onClick={() => onUpdate({ isHosteller: v })} className={`flex-1 p-3.5 rounded-lg border-2 font-black text-[9px] transition-all uppercase ${state.isHosteller === v ? 'border-blue-600 bg-white text-blue-900 shadow-md' : 'border-white bg-white/60 text-slate-300'}`}>{v ? t.yes : t.no}</button>))}</div></div>)}
-      <button disabled={!state.currentYear} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-4 rounded-xl shadow-xl shadow-blue-900/10 uppercase tracking-[0.2em] text-[10px] disabled:opacity-20 h-14">{t.continue}</button>
+      {/* Hostel Question */}
+      {isHostelEligible && (
+        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
+          <p className="text-xs sm:text-sm font-bold text-slate-800">
+            {t.hostelQuestion}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {[true, false].map(v => (
+              <button
+                key={v ? 'hostel-yes' : 'hostel-no'}
+                type="button"
+                onClick={() => onUpdate({ isHosteller: v })}
+                className={`py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all min-h-[44px] ${
+                  state.isHosteller === v
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                {v ? t.yes : t.no}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Continue Action */}
+      <button
+        type="button"
+        disabled={!state.currentYear}
+        onClick={onContinue}
+        className="w-full bg-slate-900 hover:bg-slate-950 text-white font-black text-sm uppercase tracking-wider py-4 rounded-2xl shadow-sm transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none min-h-[52px] active:scale-[0.99] touch-manipulation mt-4"
+      >
+        {t.continue}
+      </button>
     </div>
   );
 };
 
-const StepLoginCheck: React.FC<{ ready: AppState['loginReady']; onToggle: (f: keyof AppState['loginReady']) => void; onContinue: () => void; t: any; }> = ({ ready, onToggle, onContinue, t }) => {
-  const isReady = ready.username && ready.password && ready.mobile;
-  return (
-    <div className="space-y-6">
-      <header className="space-y-1.5 text-left"><h2 className="text-xl font-black text-slate-900 tracking-tight">{t.loginCheck}</h2><p className="text-slate-500 font-medium text-xs leading-relaxed">{t.loginCheckSub}</p></header>
-      <div className="bg-slate-50 p-5 rounded-2xl space-y-3.5 no-select border border-slate-200 shadow-inner">{[ { id: 'username', label: t.loginUser }, { id: 'password', label: t.loginPass }, { id: 'mobile', label: t.loginMobile } ].map(item => (
-          <label key={item.id} className="flex items-center space-x-3.5 cursor-pointer active:opacity-70 group py-0.5">
-            <div className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${ready[item.id as keyof AppState['loginReady']] ? 'bg-blue-600 border-blue-600 shadow-lg' : 'bg-white border-slate-200'}`}>{ready[item.id as keyof AppState['loginReady']] && <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" /></svg>}</div>
-            <input type="checkbox" checked={ready[item.id as keyof AppState['loginReady']]} onChange={() => onToggle(item.id as keyof AppState['loginReady'])} className="hidden" /><span className={`text-[10px] font-black tracking-tight uppercase ${ready[item.id as keyof AppState['loginReady']] ? 'text-blue-900' : 'text-slate-400'}`}>{item.label}</span>
-          </label>
-        ))}</div>
-      <button disabled={!isReady} onClick={onContinue} className="w-full bg-blue-900 text-white font-black py-4 rounded-xl shadow-xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.2em] text-[10px] disabled:opacity-20 h-14">{t.continue}</button>
-    </div>
-  );
-};
+/* ==========================================================================
+   STEP 5: HERO DOCUMENT LIST SCREEN (CRED-Level Mobile Polish)
+   ========================================================================== */
 
-const DocBadge: React.FC<{ type: BadgeType; isPrint?: boolean; t: any }> = ({ type, isPrint, t }) => {
-  const config = {
-    merge: { text: t.badgeMerge, colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
-    onepdf: { text: t.badgeOnePdf, colors: 'bg-blue-50 text-blue-700 border-blue-100', icon: 'M5 13l4 4L19 7' },
-    optional: { text: t.badgeOptional, colors: 'bg-slate-50 text-slate-500 border-slate-200', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-    ifavailable: { text: t.badgeIfAvailable, colors: 'bg-slate-50 text-slate-500 border-slate-200', icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-    anyone: { text: t.badgeAnyOne, colors: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: 'M5 13l4 4L19 7' },
-    mandatory: { text: t.badgeMandatory, colors: 'bg-red-50 text-red-700 border-red-100', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
-  }[type];
-  if (isPrint) return <span className="print-badge">[{config.text}]</span>;
-  return (
-    <div className={`inline-flex items-center px-2 py-0.5 rounded-full border ${config.colors} whitespace-nowrap shrink-0 ml-2`}>
-      <svg className="w-2.5 h-2.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d={config.icon} /></svg>
-      <span className="text-[7px] font-black uppercase tracking-tight">{config.text}</span>
-    </div>
-  );
-};
-
-const DeclarationCard: React.FC<{ title: string; instruction: string; fileName: string; downloadUrl: string; downloadLabel: string; t: any }> = ({ title, instruction, fileName, downloadUrl, downloadLabel, t }) => (
-  <div className="bg-white border border-slate-100 p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-blue-200 transition-all group flex flex-col">
-    <div className="mb-2.5">
-      <h4 className="font-black text-slate-800 text-[12px] leading-tight group-hover:text-blue-900 transition-colors uppercase tracking-tight pr-4">{title}</h4>
-    </div>
-    <p className="text-[9px] font-medium text-slate-400 mb-3 leading-relaxed">{instruction}</p>
-    
-    <a 
-      href={downloadUrl} 
-      target="_blank" 
-      rel="noopener noreferrer" 
-      className="inline-flex items-center space-x-2 px-3 py-2 bg-slate-50 hover:bg-blue-600 border border-slate-200 hover:border-blue-600 text-slate-700 hover:text-white rounded-lg transition-all shadow-sm active:scale-[0.97] self-start mb-4 group/btn"
-      aria-label="Download declaration form PDF"
-    >
-      <svg className="w-3.5 h-3.5 text-slate-400 group-hover/btn:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-      </svg>
-      <span className="text-[9px] font-black uppercase tracking-widest">{downloadLabel}</span>
-    </a>
-
-    <div className="mt-auto pt-3 border-t border-slate-50 flex flex-wrap gap-1.5">
-      <span className="text-[7px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-widest border border-slate-100">{t.badgePdfOnly}</span>
-      <span className="text-[7px] font-black bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded uppercase tracking-widest border border-slate-100">{t.badgeMax250}</span>
-      <span className="text-[7px] font-black bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded uppercase tracking-tight border border-blue-100">{t.badgeOnePdf}</span>
-      <span className="text-[7px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded uppercase tracking-tight italic border border-blue-100">{t.fileLabel}: {fileName}</span>
-    </div>
-  </div>
-);
-
-const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBack: () => void; onOpenVideo: (title: string, desc: string, url?: string) => void; t: any; }> = ({ state, onRestart, onBack, onOpenVideo, t }) => {
+const StepDocumentList: React.FC<{
+  state: AppState;
+  onRestart: () => void;
+  onUpdateQualification?: (q: DsyQualification) => void;
+  t: any;
+}> = ({ state, onRestart, onUpdateQualification, t }) => {
   const isFresh = state.currentYear === 1;
   const isDPharm = state.courseType === CourseType.DPharm;
   const isASC = state.stream === Stream.ASC;
-  const isMaster = [CourseType.MPharm, CourseType.MBA, CourseType.MCA, CourseType.MA, CourseType.MSc, CourseType.MCom].includes(state.courseType!);
+  const isMaster = [
+    CourseType.MPharm,
+    CourseType.MBA,
+    CourseType.MCA,
+    CourseType.PGNursing,
+    CourseType.MA,
+    CourseType.MSc,
+    CourseType.MCom
+  ].includes(state.courseType!);
   const isEngineering = state.stream === Stream.Engineering;
-  const isTechnical = [Stream.Engineering, Stream.Pharmacy, Stream.Management, Stream.Nursing].includes(state.stream!);
+  const isTechnical = [
+    Stream.Engineering,
+    Stream.Pharmacy,
+    Stream.Management,
+    Stream.Nursing
+  ].includes(state.stream!);
 
-  const [shouldAnimate, setShouldAnimate] = useState(true);
-  const printBtnRef = useRef<HTMLButtonElement>(null);
+  const [checkedDocs, setCheckedDocs] = useState<Record<string, boolean>>({});
+  const [prereqChecked, setPrereqChecked] = useState<Record<number, boolean>>({});
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [studentName, setStudentName] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [downloadSuccessToast, setDownloadSuccessToast] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
-          setShouldAnimate(false);
-        }
-      },
-      { threshold: 0 }
-    );
-    if (printBtnRef.current) observer.observe(printBtnRef.current);
-    const stopAnimation = () => setShouldAnimate(false);
-    window.addEventListener('scroll', stopAnimation, { once: true });
-    window.addEventListener('touchstart', stopAnimation, { once: true });
-    window.addEventListener('mousedown', stopAnimation, { once: true });
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('scroll', stopAnimation);
-      window.removeEventListener('touchstart', stopAnimation);
-      window.removeEventListener('mousedown', stopAnimation);
-    };
-  }, []);
-
-  // 1) Caste Details
+  // 1) Caste Documents
   const casteDocs = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
-    if (state.category === 'Open' || state.category === 'Minority') return docs;
+    if (state.category === 'Open') return docs;
 
     docs.push({ name: t.docCasteCert, badge: 'mandatory' });
 
-    // Caste Validity
-    const validityMandatory = (isTechnical && state.category === 'VJNT') || 
-                             [CourseType.MBA, CourseType.MCA, CourseType.MCom, CourseType.MSc].includes(state.courseType as CourseType);
-    
-    docs.push({ 
-      name: t.docCasteValidity, 
-      badge: validityMandatory ? 'mandatory' : 'optional' 
+    // Caste Validity Certificate is MANDATORY for SC, ST, OBC, VJNT, SBC, SEBC, Minority (NOT Open)
+    docs.push({
+      name: t.docCasteValidity,
+      badge: 'mandatory'
     });
 
-    // Non-Creamy Layer
-    if (['OBC', 'SEBC', 'SBC', 'VJNT'].includes(state.category!)) {
+    // Non-Creamy Layer (NCL) is required ONLY for OBC, SEBC, VJNT, SBC (NOT Open, SC, ST, Minority)
+    if (['OBC', 'SEBC', 'VJNT', 'SBC'].includes(state.category || '')) {
       docs.push({ name: t.docNCL, badge: 'mandatory' });
     }
 
     return docs;
-  }, [state.category, isTechnical, t]);
+  }, [state.category, t]);
 
-  // 2) Income Details
+  // 2) Income Documents
   const incomeDocs = useMemo<DocItem[]>(() => {
-    return [{ name: t.docIncomeCert }];
+    return [{ name: t.docIncomeCert, badge: 'mandatory' }];
   }, [t]);
 
-  // 3) Domicile Details
+  // 3) Domicile & Family (Ration Card for Open Category)
   const domicileDocs = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
-    docs.push({ name: t.docDomicileCert });
+    docs.push({ name: t.docDomicileCert, badge: 'mandatory' });
+
+    if (state.category === 'Open') {
+      docs.push({
+        name: t.docRationCard,
+        badge: 'mandatory',
+        instruction: t.rationCardInst
+      });
+    }
+
     if (state.category === 'Open' && state.isHosteller) {
       docs.push({ name: t.docAlpabhudharak, badge: 'anyone' });
     }
     return docs;
   }, [state.category, state.isHosteller, t]);
 
-  // 4) Bank Details
+  // 4) Bank & Identity Details
   const bankDocs = useMemo<DocItem[]>(() => {
     return [
-      { name: t.docAadhaarCard },
-      { name: t.docBankPassbook }
+      { name: t.docBankPassbook, badge: 'mandatory' }
     ];
   }, [t]);
 
-  // 5) Current Course Details
+  // 5) Current Course & Academic Marksheets
   const currentCourseDocs = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
-    
-    // 1. Bonafide / Fees
+
+    // Bonafide / Fees
     if (state.category === 'Open') {
       docs.push({ name: t.docAdmissionBonafideFees, badge: 'merge' });
     } else {
-      docs.push({ name: t.docAdmissionBonafide });
+      docs.push({ name: t.docAdmissionBonafide, badge: 'mandatory' });
     }
 
-    // 2. Allotment Letter
+    // Allotment Letter
     if (!isASC) {
       docs.push({ name: t.docAllotment });
     }
 
-    // 3. Academic Marksheets
-    if (state.isDirectSecondYear && (isEngineering || state.courseType === CourseType.BPharm)) {
-       docs.push({ name: t.docDiplomaFinalMarksheet, badge: 'onepdf' });
+    // DSY Qualifying Document (Inside Academic Section)
+    if (state.isDirectSecondYear) {
+      if (state.courseType === CourseType.Poly_Diploma) {
+        docs.push({
+          name: t.dsyQualifyingDoc,
+          subName: t.dsyPolyQualSub,
+          badge: 'anyone',
+          instruction: t.dsyHelperText,
+          isDsyQualifying: true,
+          dsyCourse: 'polytechnic'
+        });
+      } else if (state.courseType === CourseType.BE_BTech) {
+        docs.push({
+          name: t.dsyQualifyingDoc,
+          subName: t.dsyBeQualSub,
+          badge: 'anyone',
+          instruction: t.dsyHelperText,
+          isDsyQualifying: true,
+          dsyCourse: 'be_btech'
+        });
+      } else if (state.courseType === CourseType.BPharm) {
+        docs.push({
+          name: t.docDiplomaFinalMarksheet,
+          badge: 'dsy',
+          instruction: t.dsyHelperText
+        });
+      }
     }
 
+    // Marksheet logic per year
     if (!isFresh) {
       if (isDPharm || state.courseType === CourseType.Poly_Diploma) {
-        if (state.currentYear === 2) docs.push({ name: t.marksheet1stYear, badge: 'onepdf' });
-        if (state.currentYear === 3) docs.push({ name: t.marksheet2ndYear, badge: 'onepdf' });
+        if (!state.isDirectSecondYear) {
+          if (state.currentYear === 2) docs.push({ name: t.marksheet1stYear, badge: 'onepdf' });
+          if (state.currentYear === 3) docs.push({ name: t.marksheet2ndYear, badge: 'onepdf' });
+        } else {
+          if (state.currentYear === 3) docs.push({ name: t.marksheet2ndYear, badge: 'onepdf' });
+        }
       } else if (state.isDirectSecondYear) {
         if (state.currentYear! >= 3) {
           docs.push({ name: t.marksheet2ndYearSem, badge: 'merge' });
@@ -544,17 +1105,16 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     }
 
     return docs;
-  }, [state.category, isASC, isFresh, isDPharm, state.isDirectSecondYear, state.currentYear, state.courseType, isEngineering, t]);
+  }, [state.category, isASC, isFresh, isDPharm, state.isDirectSecondYear, state.currentYear, state.courseType, state.dsyQualification, isEngineering, t]);
 
   // 6) Previous Education Details
   const prevEduDocs = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
-    
-    docs.push({ name: t.doc10thMarksheet });
-    docs.push({ name: t.doc12thMarksheet });
-    
+    docs.push({ name: t.doc10thMarksheet, badge: 'mandatory' });
+    docs.push({ name: t.doc12thMarksheet, badge: 'mandatory' });
+
     if (isMaster) {
-      docs.push({ name: t.docGradMarksheet });
+      docs.push({ name: t.docGradMarksheet, badge: 'mandatory' });
     }
 
     if (state.hadGap) {
@@ -568,74 +1128,98 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
   const leavingCertDocsList = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
     if (isMaster) {
-      if (isFresh) docs.push({ name: t.docGradTC });
+      if (isFresh) docs.push({ name: t.docGradTC, badge: 'mandatory' });
     } else if (isFresh) {
-      docs.push({ name: t.docLeavingCert });
+      docs.push({ name: t.docLeavingCert, badge: 'mandatory' });
     }
     return docs;
   }, [isFresh, isMaster, t]);
 
   // 8) Hostel Details
   const hostelDocsList = useMemo<DocItem[]>(() => {
-    const isHostelEligibleCategory = state.category && ['Open', 'SC', 'ST', 'SBC', 'VJNT'].includes(state.category);
-    if (state.isHosteller && !isASC && isHostelEligibleCategory) {
+    const isHostelEligibleCat = state.category && ['Open', 'SC', 'ST', 'SBC', 'VJNT'].includes(state.category);
+    if (state.isHosteller && !isASC && isHostelEligibleCat) {
       return [{ name: t.docHostelBond, badge: 'merge', fileName: 'Hostel_Bond_Tax_Receipt.pdf' }];
     }
     return [];
   }, [state.isHosteller, isASC, state.category, t]);
 
-  // 9) Declaration Forms
-  const declarationForms = useMemo(() => {
-    const commonDeclLink = "https://www.atharvacoe.ac.in/wp-content/uploads/Pratidnya-Patra.pdf";
-    const minorityDeclLink = "https://www.mhssce.ac.in/pdf/Income_Self_declaration_minority.pdf";
-    
-    if (state.category === 'Open') {
-      if (state.isHosteller) {
-         return [
-           { title: t.declOpenTitle1, instruction: t.declOpenInst, fileName: "Declaration1_RationCard.pdf", downloadUrl: commonDeclLink }, 
-           { title: t.declOpenTitle2, instruction: t.declOpenInst, fileName: "Declaration2_RationCard.pdf", downloadUrl: commonDeclLink }
-         ];
-      }
-      return [{ title: t.declOpenTitle, instruction: t.declOpenInst, fileName: "Declaration_RationCard.pdf", downloadUrl: commonDeclLink }];
-    }
-    if (['OBC', 'SC', 'ST', 'SBC', 'VJNT', 'SEBC'].includes(state.category!)) {
-      return [{ title: t.declObcTitle, instruction: t.declObcInst, fileName: "Declaration.pdf", downloadUrl: commonDeclLink }];
-    }
-    if (state.category === 'Minority') {
-      return [{ title: t.declMinorityTitle, instruction: t.declMinorityInst, fileName: "Minority_Declaration.pdf", downloadUrl: minorityDeclLink }];
-    }
-    return null;
-  }, [state.category, state.isHosteller, t]);
-
+  // Unified sections for display
   const allSections = useMemo(() => {
-    const sections: { type: string; title?: string; sub?: string; icon?: React.ReactNode; docs?: DocItem[] }[] = [
-      { type: 'docs', title: t.casteDocs, sub: t.casteDocsSub, icon: <ShieldCheck className="w-4 h-4" />, docs: casteDocs },
-      { type: 'docs', title: t.incomeDocs, sub: t.incomeDocsSub, icon: <IndianRupee className="w-4 h-4" />, docs: incomeDocs },
-      { type: 'docs', title: t.domicileDocs, sub: t.domicileDocsSub, icon: <Home className="w-4 h-4" />, docs: domicileDocs },
-      { type: 'docs', title: t.bankDocs, sub: t.bankDocsSub, icon: <CreditCard className="w-4 h-4" />, docs: bankDocs },
-      { type: 'docs', title: t.currentCourseDocs, sub: t.currentCourseDocsSub, icon: <GraduationCap className="w-4 h-4" />, docs: currentCourseDocs },
-      { type: 'docs', title: t.prevEduDocs, sub: t.prevEduDocsSub, icon: <History className="w-4 h-4" />, docs: prevEduDocs },
-      { type: 'docs', title: t.hostelDocsSection, sub: t.hostelDocsSectionSub, icon: <Building2 className="w-4 h-4" />, docs: hostelDocsList },
-      { type: 'declaration' },
-      { type: 'docs', title: t.leavingCertDocs, sub: t.leavingCertDocsSub, icon: <LogOut className="w-4 h-4" />, docs: leavingCertDocsList },
+    const sections: { title: string; subtitle?: string; icon: React.ReactNode; docs: DocItem[] }[] = [
+      { title: t.idDocs, subtitle: 'Residence and family verification', icon: <Home className="w-4 h-4 text-indigo-600" />, docs: domicileDocs },
+      { title: t.categoryDocs, subtitle: 'Caste status and quota certificates', icon: <ShieldCheck className="w-4 h-4 text-rose-600" />, docs: casteDocs },
+      { title: t.incomeDocs, subtitle: 'Income proof and banking details', icon: <IndianRupee className="w-4 h-4 text-emerald-600" />, docs: [...incomeDocs, ...bankDocs] },
+      { title: t.academicDocs, subtitle: 'Admission proof and marksheets', icon: <GraduationCap className="w-4 h-4 text-blue-600" />, docs: currentCourseDocs },
+      { title: t.prevEduDocs, subtitle: 'Prior school & college records', icon: <History className="w-4 h-4 text-violet-600" />, docs: prevEduDocs },
+      { title: t.hostelDocsSection, subtitle: 'Hostel accommodation proof', icon: <Building2 className="w-4 h-4 text-amber-600" />, docs: hostelDocsList },
+      { title: t.leavingCertDocs, subtitle: 'Original transfer records', icon: <LogOut className="w-4 h-4 text-rose-600" />, docs: leavingCertDocsList }
     ];
-    
-    return sections.filter(s => {
-      if (s.type === 'declaration') return declarationForms !== null;
-      return s.docs && s.docs.length > 0;
-    });
-  }, [casteDocs, incomeDocs, domicileDocs, bankDocs, currentCourseDocs, prevEduDocs, hostelDocsList, leavingCertDocsList, declarationForms, t]);
 
-  const handlePrint = () => {
-    setShouldAnimate(false);
-    window.print();
+    return sections.filter(s => s.docs && s.docs.length > 0);
+  }, [domicileDocs, casteDocs, incomeDocs, bankDocs, currentCourseDocs, prevEduDocs, hostelDocsList, leavingCertDocsList, t]);
+
+  // Flat list for progress tracking
+  const flatDocs = useMemo<FlatDocItem[]>(() => {
+    const list: FlatDocItem[] = [];
+
+    allSections.forEach((section, sIdx) => {
+      section.docs.forEach((doc, dIdx) => {
+        list.push({
+          id: `doc-${sIdx}-${dIdx}`,
+          name: doc.name,
+          subName: doc.subName,
+          category: section.title,
+          badge: doc.badge,
+          fileName: doc.fileName,
+          instruction: doc.instruction,
+          isDsyQualifying: doc.isDsyQualifying,
+          dsyCourse: doc.dsyCourse
+        });
+      });
+    });
+
+    return list;
+  }, [allSections]);
+
+  const checkedCount = useMemo(() => {
+    return flatDocs.filter(d => checkedDocs[d.id]).length;
+  }, [flatDocs, checkedDocs]);
+
+  const progressPercentage = useMemo(() => {
+    if (flatDocs.length === 0) return 0;
+    return Math.round((checkedCount / flatDocs.length) * 100);
+  }, [checkedCount, flatDocs]);
+
+  const handleDownloadPdfSubmit = () => {
+    if (!studentName.trim()) {
+      setNameError(t.nameRequired || 'Please enter your name');
+      return;
+    }
+    setIsGeneratingPdf(true);
+    try {
+      generateChecklistPdf({
+        studentName: studentName.trim(),
+        state,
+        sections: allSections,
+        t
+      });
+      setShowDownloadModal(false);
+      setDownloadSuccessToast(true);
+      setTimeout(() => setDownloadSuccessToast(false), 3500);
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleShareOnWhatsApp = () => {
     const mode = isFresh ? t.freshApp : t.renewalApp;
-    const yearSuffix = state.currentYear === 1 ? t.st : state.currentYear === 2 ? t.nd : state.currentYear === 3 ? t.rd : t.th;
+    const yearSuffix =
+      state.currentYear === 1 ? t.st : state.currentYear === 2 ? t.nd : state.currentYear === 3 ? t.rd : t.th;
     const hostelStatus = state.isHosteller ? t.yes : t.no;
-    
+
     let message = `*${t.waChecklistHeader}*\n\n`;
     message += `🎓 *Course:* ${state.courseType || state.stream}\n`;
     message += `📅 *Year:* ${state.currentYear}${yearSuffix} ${t.yearLabel}\n`;
@@ -646,185 +1230,441 @@ const StepDocumentList: React.FC<{ state: AppState; onRestart: () => void; onBac
     }
     message += `\n`;
 
+    message += `⚡ *${t.keepTheseReady}:*\n`;
+    message += `• ${t.mahaIdTitle} [${t.mahaIdBadge}]\n`;
+    message += `• ${t.aadhaarCardTitle} [${t.aadhaarCardBadge}]\n`;
+    message += `• ${t.aadhaarMobileTitle} [${t.aadhaarMobileBadge}]\n\n`;
+
     allSections.forEach(section => {
-      if (section.type === 'declaration') {
-        message += `✅ *${t.declarationDocsSection}:*\n`;
-        declarationForms?.forEach(d => message += `• ${d.title}\n`);
-      } else {
-        message += `✅ *${section.title}:*\n`;
-        section.docs?.forEach(d => {
-          if (d.name) message += `• ${d.name}\n`;
-        });
-      }
+      message += `📋 *${section.title}:*\n`;
+      section.docs.forEach(d => {
+        if (d.name) {
+          let line = `• ${d.name}`;
+          if (d.subName) line += ` (${d.subName})`;
+          if (d.badge === 'anyone') line += ` [ANY ONE]`;
+          if (d.badge === 'dsy') line += ` [DSY]`;
+          if (d.badge === 'merge') line += ` [${t.badgeMerge || 'Create One PDF'}]`;
+          if (d.badge === 'onepdf') line += ` [ONE PDF]`;
+          message += `${line}\n`;
+        }
+      });
       message += `\n`;
     });
 
     message += `_${t.waGeneratedBy}_`;
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    const encoded = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encoded}`, '_blank');
   };
 
-  const printArea = document.getElementById('print-area');
-
   return (
-    <div className="space-y-8">
-      {printArea && createPortal(
-        <div className="space-y-12">
-          <header className="border-b-4 border-black pb-8 mb-8">
-            <h1 className="text-4xl font-black uppercase tracking-tighter mb-4 text-black">{t.printTitle}</h1>
-            <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-8">{t.printSubtitle}</p>
-            <div className="grid grid-cols-2 gap-y-6 gap-x-12 border-t border-slate-200 pt-6">
-              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">{t.printTargetCourse}</span><span className="text-base font-black text-black leading-tight">{state.courseType || state.stream}</span></div>
-              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">{t.printCasteCategory}</span><span className="text-base font-black text-black leading-tight">{state.category}</span></div>
-              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">{t.printAcademicYear}</span><span className="text-base font-black text-black leading-tight">{state.currentYear}{state.currentYear === 1 ? t.st : state.currentYear === 2 ? t.nd : state.currentYear === 3 ? t.rd : t.th} {t.yearLabel}</span></div>
-              <div className="flex flex-col"><span className="text-[10px] uppercase text-slate-500 font-black tracking-widest mb-1">{t.printAppMode}</span><span className="text-base font-black text-black leading-tight">{isFresh ? t.freshAppCaps : t.renewalAppCaps}</span></div>
-            </div>
-          </header>
-          <div className="space-y-10">
-            {allSections.map((section, sIdx) => {
-              if (section.type === 'declaration') {
-                return (
-                  <div key={sIdx} className="print-section">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{t.declarationDocsSection}</h3>
-                    {declarationForms?.map((decl, idx) => (
-                      <div key={idx} className="print-doc-item">
-                        <span className="print-checkbox"></span>
-                        <span className="text-sm font-black uppercase">{decl.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              }
-              
-              return (
-                <div key={sIdx} className="print-section">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{section.title}</h3>
-                  {section.docs?.filter(doc => doc.name).map((doc, dIdx) => (
-                    <div key={dIdx} className="print-doc-item">
-                      <span className="print-checkbox"></span>
-                      <span className="text-sm font-black uppercase whitespace-pre-line">
-                        {doc.name}{doc.badge && <DocBadge type={doc.badge} isPrint t={t} />}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-          <footer className="mt-12 pt-8 border-t border-black text-center">
-            <p className="text-sm font-black uppercase tracking-widest text-black mb-2">{t.printFooterNote}</p>
-            <p className="text-[9px] text-slate-500 uppercase tracking-tighter">{t.printGeneratedOn} {new Date().toLocaleDateString()}</p>
-          </footer>
-        </div>, printArea
-      )}
+    <div className="space-y-6">
+      {/* Screen Header */}
+      <header className="space-y-3 text-left">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+            {t.docsTitle}
+          </h1>
+          <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
+            {t.docsSub}
+          </p>
+        </div>
 
-      <header className="space-y-3 no-print text-left">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-          <h2 className="text-lg font-black text-slate-900 tracking-tight leading-tight uppercase max-w-sm">{t.docsTitle}</h2>
-          <div className="flex flex-col items-start sm:items-end shrink-0">
-            <button ref={printBtnRef} onClick={handlePrint} className={`inline-flex items-center space-x-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 text-slate-500 rounded-lg transition-all border border-slate-200/60 shadow-sm cursor-pointer group ${shouldAnimate ? 'animate-soft-pulse' : ''}`}>
-              <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 00-2 2h2m2 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 00-2 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-              <span className="text-[9px] font-bold whitespace-nowrap tracking-tight">{t.btnPrint}</span>
-            </button>
+        {/* Selected Criteria Summary Chips */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          {[
+            state.courseType || state.stream,
+            state.category,
+            `${state.currentYear} ${t.yearLabel}`,
+            isFresh ? t.freshApp : t.renewalApp
+          ].map((pill, idx) => (
+            <span
+              key={idx}
+              className="px-2.5 py-1 rounded-lg bg-white border border-slate-200/80 text-slate-700 text-xs font-bold shadow-2xs"
+            >
+              {pill}
+            </span>
+          ))}
+        </div>
+
+        {/* Live Progress Bar */}
+        <div className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-xs font-bold text-slate-800 block">
+              {checkedCount} of {flatDocs.length} Documents Checked
+            </span>
+            <span className="text-[11px] font-semibold text-slate-400">
+              Tap documents as you keep them ready
+            </span>
+          </div>
+          <div className="flex items-center space-x-2 shrink-0">
+            <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-600 transition-all duration-300 rounded-full"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+            <span className="text-xs font-black text-emerald-700 w-8 text-right">
+              {progressPercentage}%
+            </span>
           </div>
         </div>
-        <div className="flex flex-wrap gap-1 mt-1">{[state.courseType || state.stream, state.category, `${state.currentYear} Year`, isFresh ? t.freshApp : t.renewalApp].map((pill, i) => (<span key={i} className="px-2.5 py-1 bg-slate-50 text-slate-500 text-[8px] font-black rounded uppercase border border-slate-100 shadow-sm tracking-tight">{pill}</span>))}</div>
       </header>
 
-      <div className="p-5 bg-[#1e3a8a] text-white rounded-2xl text-left relative overflow-hidden shadow-xl shadow-blue-900/10 no-print">
-        <h4 className="text-blue-300 font-black text-[9px] uppercase tracking-[0.4em] mb-4">{t.protocolTitle}</h4>
-        <ul className="space-y-2.5 text-[11px] font-bold leading-relaxed opacity-90">
-          <li className="flex items-start space-x-2.5"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span>{t.rulePdf}</span></li>
-          <li className="flex items-start space-x-2.5"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span>{t.ruleSize}</span></li>
-          <li className="flex items-start space-x-2.5"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(96,165,250,0.6)]"/> <span className="text-blue-100/70 italic font-medium">{t.ruleNaming}</span></li>
-        </ul>
-      </div>
+      {/* ====================================================================
+          KEEP READY SECTION (Redesigned Pre-Application Checklist Card)
+          ==================================================================== */}
+      <section className="bg-white border border-[#E6EAEE] rounded-[16px] p-4 flex flex-col gap-4 text-left shadow-xs">
+        {/* Header */}
+        <header className="flex flex-col gap-1">
+          <h2 className="text-[17px] font-bold text-[#111827] leading-[22px] tracking-tight">
+            Keep these ready
+          </h2>
+          <p className="text-[13px] font-normal text-[#5B6472] leading-[18px]">
+            {(() => {
+              const readyCount = [0, 1, 2].filter(i => prereqChecked[i]).length;
+              if (readyCount === 0) return "3 things you'll need to apply";
+              return `${readyCount} of 3 ready`;
+            })()}
+          </p>
+        </header>
 
-      <div className="space-y-6 no-print">
-        {allSections.map((section, sIdx) => {
-          if (section.type === 'declaration') {
-            return (
-              <section key={sIdx} className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden text-left">
-                <div className="bg-slate-50/50 px-5 py-4 border-b border-slate-100">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-white rounded-lg border border-slate-100 text-blue-600 shadow-sm">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">{t.declarationDocsSection}</h3>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{t.declarationDocsSectionSub}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-5 space-y-3">
-                  {declarationForms?.map((decl, idx) => (
-                    <DeclarationCard key={idx} {...decl} downloadLabel={t.downloadForm} t={t} />
-                  ))}
-                </div>
-              </section>
-            );
-          }
-          
-          return (
-            <section key={sIdx} className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden text-left">
-              <div className="bg-slate-50/50 px-5 py-4 border-b border-slate-100">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-white rounded-lg border border-slate-100 text-blue-600 shadow-sm">
-                    {section.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-tight">{section.title}</h3>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{section.sub}</p>
-                  </div>
-                </div>
+        {/* Row 1: MahaID (Expanded, Main Row) */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 min-w-10 rounded-[12px] bg-[#ECFDF8] flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5 text-[#0F766E]" strokeWidth={2} />
+            </div>
+
+            <div className="flex-1 min-w-0 flex flex-col gap-1 pt-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[15px] font-semibold text-[#111827] leading-[20px]">MahaID</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold leading-[14px] bg-[#FEECEC] text-[#B42318]">
+                  Required
+                </span>
               </div>
-              {section.docs && section.docs.length > 0 && (
-                <div className="p-5 space-y-4">
-                  {section.docs.filter(doc => doc.name).map((doc, dIdx) => (
-                    <div key={dIdx} className="flex items-start space-x-3 group">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-600/30 mt-1.5 shrink-0 group-hover:bg-blue-600 transition-colors" />
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-black text-slate-700 text-[11px] leading-relaxed group-hover:text-blue-900 transition-colors uppercase tracking-tight whitespace-pre-line break-words flex items-center flex-wrap gap-1.5">
-                          {doc.name}{doc.badge && <DocBadge type={doc.badge} t={t} />}
-                        </h4>
-                        {doc.fileName && <span className="text-[8px] font-bold text-blue-600/60 block mt-0.5 lowercase italic">{t.fileLabel}: {doc.fileName}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          );
-        })}
-      </div>
+              <p className="text-[13px] font-normal text-[#5B6472] leading-[19px]">
+                You'll need your MahaID to continue your scholarship application.
+              </p>
+            </div>
 
-      <section className="space-y-5 pt-8 border-t border-slate-100 no-print text-left">
-        <h3 className="font-black text-slate-900 text-base uppercase tracking-tight">{t.docToolsTitle}</h3>
-        <div className="grid grid-cols-1 gap-2.5">
-          {[ { label: t.btnMerge, sub: t.helperMerge, url: 'https://www.ilovepdf.com/merge_pdf' }, { label: t.btnCompress, sub: t.helperCompress, url: 'https://www.ilovepdf.com/compress_pdf' }, { label: t.btnImgToPdf, sub: t.helperImgToPdf, url: 'https://www.ilovepdf.com/jpg_to_pdf' } ].map((tool, i) => (
-            <a key={i} href={tool.url} target="_blank" rel="noopener noreferrer" className="p-4 rounded-xl border border-slate-100 hover:border-blue-300 hover:bg-white bg-white shadow-[0_1px_4px_rgba(0,0,0,0.01)] active:scale-[0.98] transition-all flex flex-col group text-left">
-              <span className="font-black text-[10px] uppercase tracking-widest text-slate-800 group-hover:text-blue-900 transition-colors">{tool.label}</span>
-              <span className="text-[8px] font-bold text-slate-400 mt-1.5 group-hover:text-slate-500 transition-colors">{tool.sub}</span>
+            {/* Optional 24px check circle (44px tap area) */}
+            <button
+              type="button"
+              onClick={() => setPrereqChecked(prev => ({ ...prev, 0: !prev[0] }))}
+              aria-label="Mark MahaID as ready"
+              aria-checked={Boolean(prereqChecked[0])}
+              role="checkbox"
+              className="w-11 h-11 flex items-center justify-center shrink-0 -mr-1 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/40"
+            >
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                  prereqChecked[0]
+                    ? 'bg-[#0F766E] border border-[#0F766E]'
+                    : 'border-[1.5px] border-[#D1D5DB] bg-transparent'
+                }`}
+              >
+                {prereqChecked[0] && <Check className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />}
+              </div>
+            </button>
+          </div>
+
+          {/* MahaID Action Block */}
+          <div className="flex flex-col gap-2 w-full">
+            <span className="text-[13px] font-medium text-[#111827]">Don't have one yet?</span>
+            
+            <a
+              href="https://mahasarathi.maharashtra.gov.in/home/landing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-11 w-full rounded-[12px] border border-[#0F766E] text-[#0F766E] text-[14px] font-semibold inline-flex items-center justify-center gap-2 hover:bg-[#F0FDFA] active:scale-[0.99] transition-all"
+            >
+              <span>Create MahaID</span>
+              <ExternalLink className="w-4 h-4" strokeWidth={2} />
             </a>
-          ))}
+
+            <p className="text-[12px] text-[#5B6472] leading-[17px]">
+              Opens the Mahasarathi portal. Your MahaID will be sent to your registered mobile number.
+            </p>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-[#EEF0F3] w-full" />
+
+        {/* Row 2: Aadhaar Card (Compact, Single Line) */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 min-w-10 rounded-[12px] bg-[#ECFDF8] flex items-center justify-center shrink-0">
+            <CreditCard className="w-5 h-5 text-[#0F766E]" strokeWidth={2} />
+          </div>
+
+          <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+            <span className="text-[15px] font-semibold text-[#111827] leading-[20px]">Aadhaar card</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold leading-[14px] bg-[#FEECEC] text-[#B42318]">
+              Required
+            </span>
+          </div>
+
+          {/* Optional 24px check circle (44px tap area) */}
+          <button
+            type="button"
+            onClick={() => setPrereqChecked(prev => ({ ...prev, 1: !prev[1] }))}
+            aria-label="Mark Aadhaar card as ready"
+            aria-checked={Boolean(prereqChecked[1])}
+            role="checkbox"
+            className="w-11 h-11 flex items-center justify-center shrink-0 -mr-1 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/40"
+          >
+            <div
+              className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                prereqChecked[1]
+                  ? 'bg-[#0F766E] border border-[#0F766E]'
+                  : 'border-[1.5px] border-[#D1D5DB] bg-transparent'
+              }`}
+            >
+              {prereqChecked[1] && <Check className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />}
+            </div>
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-[#EEF0F3] w-full" />
+
+        {/* Row 3: Aadhaar-linked Mobile (Compact) */}
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 min-w-10 rounded-[12px] bg-[#ECFDF8] flex items-center justify-center shrink-0">
+            <Smartphone className="w-5 h-5 text-[#0F766E]" strokeWidth={2} />
+          </div>
+
+          <div className="flex-1 min-w-0 flex flex-col gap-1 pt-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[15px] font-semibold text-[#111827] leading-[20px]">Aadhaar-linked mobile</span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold leading-[14px] bg-[#FFF4DB] text-[#8A5A00]">
+                For OTP
+              </span>
+            </div>
+            <p className="text-[12px] text-[#5B6472] leading-[16px]">
+              You'll get an OTP on this number.
+            </p>
+          </div>
+
+          {/* Optional 24px check circle (44px tap area) */}
+          <button
+            type="button"
+            onClick={() => setPrereqChecked(prev => ({ ...prev, 2: !prev[2] }))}
+            aria-label="Mark Aadhaar-linked mobile as ready"
+            aria-checked={Boolean(prereqChecked[2])}
+            role="checkbox"
+            className="w-11 h-11 flex items-center justify-center shrink-0 -mr-1 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F766E]/40"
+          >
+            <div
+              className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${
+                prereqChecked[2]
+                  ? 'bg-[#0F766E] border border-[#0F766E]'
+                  : 'border-[1.5px] border-[#D1D5DB] bg-transparent'
+              }`}
+            >
+              {prereqChecked[2] && <Check className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />}
+            </div>
+          </button>
         </div>
       </section>
 
-      <div className="space-y-2.5 mt-6 no-print">
-        <button 
-          onClick={handleShareOnWhatsApp} 
-          className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white font-black px-6 py-4 rounded-xl shadow-lg shadow-green-500/10 active:scale-[0.96] transition-all flex items-center justify-center space-x-3 mb-1.5 min-h-[52px] text-center"
-          aria-label="Share document checklist on WhatsApp"
+      {/* ====================================================================
+          DOCUMENT REQUIREMENTS LIST (Grouped by Category, NO NUMBERS)
+          ==================================================================== */}
+      <section className="space-y-6">
+        {allSections.map((section, sIdx) => (
+          <div key={sIdx} className="space-y-2.5">
+            {/* Clean Section Title with Icon */}
+            <div className="flex items-center space-x-2 px-1">
+              <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center">
+                {section.icon}
+              </div>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                {section.title}
+              </h3>
+            </div>
+
+            {/* Document Rows in this section */}
+            <div className="space-y-2">
+              {section.docs.map((doc, dIdx) => {
+                const docId = `doc-${sIdx}-${dIdx}`;
+                return (
+                  <DocumentRow
+                    key={docId}
+                    name={doc.name}
+                    subName={doc.subName}
+                    badge={doc.badge}
+                    fileName={doc.fileName}
+                    instruction={doc.instruction}
+                    isDsyQualifying={doc.isDsyQualifying}
+                    dsyCourse={doc.dsyCourse}
+                    selectedDsyQual={state.dsyQualification}
+                    onSelectDsyQual={onUpdateQualification}
+                    t={t}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* Global Submission Protocol Tip */}
+      <div className="p-4 rounded-2xl bg-slate-100/70 border border-slate-200/60 text-left space-y-1.5">
+        <span className="text-[11px] font-black uppercase text-slate-700 tracking-wider flex items-center">
+          <Info className="w-3.5 h-3.5 mr-1.5 text-indigo-600" />
+          {t.protocolTitle}
+        </span>
+        <p className="text-xs font-semibold text-slate-600 leading-relaxed">
+          {t.rulePdf} • {t.ruleSize} • {t.ruleNaming}
+        </p>
+      </div>
+
+      {/* ====================================================================
+          ACTION BUTTONS & FOOTER (Exact Layout, Spacing, and Colors)
+          ==================================================================== */}
+      <div className="pt-2 flex flex-col items-center">
+        {/* 2. Download button: 48px tall, radius 12, keep dark fill, single-line label "Download checklist PDF" */}
+        <button
+          type="button"
+          onClick={() => {
+            setNameError('');
+            setShowDownloadModal(true);
+          }}
+          className="w-full h-[48px] bg-slate-900 hover:bg-slate-950 text-white font-bold text-sm rounded-[12px] shadow-sm transition-all duration-200 flex items-center justify-center space-x-2 active:scale-[0.99] touch-manipulation cursor-pointer shrink-0"
         >
-          <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 448 512">
+          <FileDown className="w-4 h-4 shrink-0" />
+          <span className="whitespace-nowrap">{t.btnDownloadPdf || 'Download checklist PDF'}</span>
+        </button>
+
+        {/* 1. WhatsApp button: 8px gap below Download, one line, label "Share on WhatsApp", no emoji in the text,
+               WhatsApp icon inline before the label with the group centered. Height 44px, radius 12,
+               outlined style (white bg, 1.5px border #25D366, text/icon #128C4A) */}
+        <button
+          type="button"
+          onClick={handleShareOnWhatsApp}
+          className="mt-2 w-full h-[44px] bg-white border-[1.5px] border-[#25D366] text-[#128C4A] hover:bg-[#25D366]/5 font-bold text-sm rounded-[12px] shadow-xs transition-all duration-200 flex items-center justify-center space-x-2 active:scale-[0.99] touch-manipulation cursor-pointer shrink-0"
+        >
+          <svg className="w-4 h-4 fill-current shrink-0" viewBox="0 0 448 512">
             <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-5.5-2.8-23.2-8.5-44.2-27.1-16.4-14.6-27.4-32.7-30.6-38.2-3.2-5.6-.3-8.6 2.5-11.3 2.5-2.5 5.5-6.5 8.3-9.7 2.8-3.3 3.7-5.6 5.6-9.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 13.2 5.8 23.5 9.2 31.5 11.8 13.3 4.2 25.4 3.6 35 2.2 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
           </svg>
-          <span className="text-[10px] uppercase font-black tracking-[0.05em] leading-snug break-words max-w-[200px]">
-            {t.shareWhatsApp}
-          </span>
+          <span className="whitespace-nowrap">{t.shareWhatsApp || 'Share on WhatsApp'}</span>
         </button>
-        <button onClick={onRestart} className="w-full bg-blue-900 text-white font-black py-4 rounded-xl shadow-2xl shadow-blue-900/10 active:scale-[0.98] uppercase tracking-[0.2em] text-[10px] transition-all hover:bg-blue-800 h-14">{t.home}</button>
+
+        {/* 3. "Restart Assistant": text-style button, 40px tall, 13px, muted gray */}
+        <button
+          type="button"
+          onClick={onRestart}
+          className="mt-1 w-full h-[40px] bg-transparent text-slate-500 hover:text-slate-700 font-medium text-[13px] rounded-lg transition-colors flex items-center justify-center space-x-1.5 active:scale-95 touch-manipulation cursor-pointer"
+        >
+          <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+          <span>{t.restart || 'Restart Assistant'}</span>
+        </button>
+
+        {/* 4. Footer "Created by Sohel Sayyad": remove separate bordered section. 12px muted text, centered, 12px above it, 8px padding below */}
+        <div className="mt-3 pb-2 text-center text-[12px] text-slate-400 font-normal leading-normal">
+          Created by{' '}
+          <a
+            href="https://www.instagram.com/sohellsd/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-500 hover:text-slate-700 transition-colors"
+          >
+            Sohel Sayyad
+          </a>
+        </div>
       </div>
+
+      {/* ====================================================================
+          STUDENT NAME MODAL / BOTTOM SHEET (Android-First Polish)
+          ==================================================================== */}
+      {showDownloadModal && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-200"
+          onClick={() => setShowDownloadModal(false)}
+        >
+          <div
+            className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-slate-200/80 animate-in slide-in-from-bottom duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mobile drag handle */}
+            <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-4 sm:hidden" />
+
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                {t.downloadModalTitle || 'DOWNLOAD YOUR CHECKLIST'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowDownloadModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center text-sm font-bold min-h-[32px] cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
+              {t.enterYourName || 'Enter your name'}
+            </label>
+
+            <input
+              type="text"
+              value={studentName}
+              onChange={e => {
+                setStudentName(e.target.value);
+                if (nameError) setNameError('');
+              }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  handleDownloadPdfSubmit();
+                }
+              }}
+              placeholder={t.namePlaceholder || 'Your full name'}
+              autoFocus
+              className={`w-full px-4 py-3.5 rounded-2xl border text-sm sm:text-base font-semibold text-slate-900 outline-none transition-all min-h-[50px] ${
+                nameError
+                  ? 'border-rose-500 bg-rose-50/30 focus:border-rose-600 focus:ring-2 focus:ring-rose-200'
+                  : 'border-slate-300 bg-white focus:border-slate-900 focus:ring-2 focus:ring-slate-200'
+              }`}
+            />
+
+            {nameError ? (
+              <p className="text-xs font-semibold text-rose-600 mt-1.5">{nameError}</p>
+            ) : (
+              <p className="text-xs font-medium text-slate-500 mt-1.5">
+                {t.nameHelper || 'Your name will be added to the checklist PDF.'}
+              </p>
+            )}
+
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowDownloadModal(false)}
+                className="flex-1 py-3.5 px-4 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-bold text-xs sm:text-sm min-h-[48px] active:scale-[0.98] transition-all cursor-pointer"
+              >
+                {t.cancel || 'Cancel'}
+              </button>
+              <button
+                type="button"
+                disabled={isGeneratingPdf}
+                onClick={handleDownloadPdfSubmit}
+                className="flex-1 py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-950 text-white font-extrabold text-xs sm:text-sm min-h-[48px] shadow-sm active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center space-x-2"
+              >
+                <FileDown className="w-4 h-4" />
+                <span>{isGeneratingPdf ? 'Generating...' : (t.downloadPdf || 'Download PDF')}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightweight Download Success Toast */}
+      {downloadSuccessToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center space-x-2.5 text-xs sm:text-sm font-bold animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>✓ {t.downloadSuccess || 'Checklist downloaded'}</span>
+        </div>
+      )}
     </div>
   );
 };

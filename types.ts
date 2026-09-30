@@ -22,13 +22,16 @@ export enum CourseType {
   MCom = 'M.Com',
   BE_BTech = 'BE / B.Tech',
   Poly_Diploma = 'Polytechnic / Diploma',
-  BScNursing = 'B.Sc Nursing',
+  BScNursing = 'B.Sc. Nursing',
+  PGNursing = 'PG Nursing',
   GNM = 'GNM'
 }
 
 export type Category = 'Open' | 'OBC' | 'SC' | 'ST' | 'SBC' | 'VJNT' | 'SEBC' | 'Minority';
 
 export type Language = 'en' | 'hi' | 'mr';
+
+export type DsyQualification = 'iti' | '12th' | 'diploma' | 'equivalent';
 
 export interface AppState {
   language: Language;
@@ -40,9 +43,5 @@ export interface AppState {
   isHosteller: boolean;
   hadGap: boolean;
   isDirectSecondYear: boolean;
-  loginReady: {
-    username: boolean;
-    password: boolean;
-    mobile: boolean;
-  };
+  dsyQualification?: DsyQualification | null;
 }

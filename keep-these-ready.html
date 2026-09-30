@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pre-Application Checklist Card</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* CSS Reset & Design Tokens (Spacing scale: 4 / 8 / 12 / 16 only) */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      
+      /* Light theme tokens */
+      --page-bg: #F1F4F9;
+      --frame-bg: #FFFFFF;
+      --frame-border: #DDE2E8;
+      --card-bg: #FFFFFF;
+      --card-border: #E6EAEE;
+      --divider: #EEF0F3;
+      
+      --text-title: #111827;
+      --text-sub: #5B6472;
+      --text-helper: #5B6472;
+      
+      --icon-tile-bg: #ECFDF8;
+      --icon-stroke: #0F766E;
+      
+      --badge-req-bg: #FEECEC;
+      --badge-req-text: #B42318;
+      --badge-otp-bg: #FFF4DB;
+      --badge-otp-text: #8A5A00;
+      
+      --btn-border: #0F766E;
+      --btn-text: #0F766E;
+      --btn-hover-bg: #F0FDFA;
+      
+      --check-border: #D1D5DB;
+      --check-checked-bg: #0F766E;
+      --check-checked-border: #0F766E;
+      --check-icon-color: #FFFFFF;
+    }
+
+    /* Dark mode via prefers-color-scheme */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page-bg: #0B0F17;
+        --frame-bg: #111827;
+        --frame-border: #1F2937;
+        --card-bg: #1A2232;
+        --card-border: #2D3748;
+        --divider: #263345;
+        
+        --text-title: #F9FAFB;
+        --text-sub: #94A3B8;
+        --text-helper: #94A3B8;
+        
+        --icon-tile-bg: #0E2A27;
+        --icon-stroke: #2DD4BF;
+        
+        --badge-req-bg: #3F191B;
+        --badge-req-text: #FCA5A5;
+        --badge-otp-bg: #382A12;
+        --badge-otp-text: #FDE047;
+        
+        --btn-border: #14B8A6;
+        --btn-text: #2DD4BF;
+        --btn-hover-bg: #132E2B;
+        
+        --check-border: #4B5563;
+        --check-checked-bg: #14B8A6;
+        --check-checked-border: #14B8A6;
+        --check-icon-color: #0B0F17;
+      }
+    }
+
+    /* Manual theme override support for testing */
+    [data-theme="dark"] {
+      --page-bg: #0B0F17;
+      --frame-bg: #111827;
+      --frame-border: #1F2937;
+      --card-bg: #1A2232;
+      --card-border: #2D3748;
+      --divider: #263345;
+      
+      --text-title: #F9FAFB;
+      --text-sub: #94A3B8;
+      --text-helper: #94A3B8;
+      
+      --icon-tile-bg: #0E2A27;
+      --icon-stroke: #2DD4BF;
+      
+      --badge-req-bg: #3F191B;
+      --badge-req-text: #FCA5A5;
+      --badge-otp-bg: #382A12;
+      --badge-otp-text: #FDE047;
+      
+      --btn-border: #14B8A6;
+      --btn-text: #2DD4BF;
+      --btn-hover-bg: #132E2B;
+      
+      --check-border: #4B5563;
+      --check-checked-bg: #14B8A6;
+      --check-checked-border: #14B8A6;
+      --check-icon-color: #0B0F17;
+    }
+
+    [data-theme="light"] {
+      --page-bg: #F1F4F9;
+      --frame-bg: #FFFFFF;
+      --frame-border: #DDE2E8;
+      --card-bg: #FFFFFF;
+      --card-border: #E6EAEE;
+      --divider: #EEF0F3;
+      
+      --text-title: #111827;
+      --text-sub: #5B6472;
+      --text-helper: #5B6472;
+      
+      --icon-tile-bg: #ECFDF8;
+      --icon-stroke: #0F766E;
+      
+      --badge-req-bg: #FEECEC;
+      --badge-req-text: #B42318;
+      --badge-otp-bg: #FFF4DB;
+      --badge-otp-text: #8A5A00;
+      
+      --btn-border: #0F766E;
+      --btn-text: #0F766E;
+      --btn-hover-bg: #F0FDFA;
+      
+      --check-border: #D1D5DB;
+      --check-checked-bg: #0F766E;
+      --check-checked-border: #0F766E;
+      --check-icon-color: #FFFFFF;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--page-bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      transition: background-color 0.2s ease;
+    }
+
+    /* Container for demo / theme switch */
+    .preview-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .theme-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--frame-bg);
+      border: 1px solid var(--frame-border);
+      border-radius: 9999px;
+      padding: 4px 8px;
+      font-size: 13px;
+      color: var(--text-sub);
+    }
+
+    .theme-btn {
+      background: transparent;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-sub);
+      transition: all 0.15s ease;
+    }
+
+    .theme-btn.active {
+      background: var(--icon-tile-bg);
+      color: var(--icon-stroke);
+    }
+
+    /* 375px Mobile Frame */
+    .mobile-frame {
+      width: 100%;
+      max-width: 375px;
+      background: var(--frame-bg);
+      border: 1px solid var(--frame-border);
+      border-radius: 24px;
+      box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.08);
+      padding: 16px;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    /* =========================================
+       CARD (Exact Visual Specs)
+       - white, 16px padding, 16px radius, 1px border #E6EAEE
+       ========================================= */
+    .checklist-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px; /* Spacing scale: 16px */
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    /* =========================================
+       HEADER
+       - "Keep these ready" (17px/700, sentence case)
+       - Subtitle: "3 things you'll need to apply" (13px, #5B6472)
+       ========================================= */
+    .card-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px; /* Spacing scale: 4px */
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 22px;
+      color: var(--text-title);
+      letter-spacing: -0.01em;
+    }
+
+    .card-subtitle {
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 18px;
+      color: var(--text-sub);
+    }
+
+    /* =========================================
+       DIVIDERS
+       - 1px #EEF0F3
+       ========================================= */
+    .divider {
+      height: 1px;
+      background-color: var(--divider);
+      width: 100%;
+      border: none;
+    }
+
+    /* =========================================
+       ICON TILES
+       - 40x40, radius 12, tint (#ECFDF8), same stroke weight
+       ========================================= */
+    .icon-tile {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 12px;
+      background-color: var(--icon-tile-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .icon-svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--icon-stroke);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    /* =========================================
+       BADGES
+       - Pill, 11px/600, padding 2px 8px
+       - Required: bg #FEECEC / text #B42318
+       - For OTP: bg #FFF4DB / text #8A5A00
+       ========================================= */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 14px;
+      white-space: nowrap;
+    }
+
+    .badge-required {
+      background-color: var(--badge-req-bg);
+      color: var(--badge-req-text);
+    }
+
+    .badge-otp {
+      background-color: var(--badge-otp-bg);
+      color: var(--badge-otp-text);
+    }
+
+    /* =========================================
+       TITLES & TEXT
+       - Titles: 15px/600, #111827
+       - Descriptions: 13px/400, line-height 19px, #5B6472
+       ========================================= */
+    .row-title {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 20px;
+      color: var(--text-title);
+    }
+
+    .row-description {
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 19px;
+      color: var(--text-sub);
+    }
+
+    /* =========================================
+       CHECK CIRCLE
+       - 24px check circle with 44px tap area on the right
+       - Marks it "I have this" (teal fill with checkmark)
+       ========================================= */
+    .check-tap-area {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      padding: 0;
+      margin-right: -4px;
+      border-radius: 50%;
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+
+    .check-tap-area:focus-visible .check-circle {
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.35);
+    }
+
+    .check-circle {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid var(--check-border);
+      background-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .check-circle.checked {
+      background-color: var(--check-checked-bg);
+      border-color: var(--check-checked-border);
+    }
+
+    .check-icon {
+      width: 14px;
+      height: 14px;
+      stroke: var(--check-icon-color);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .check-circle.checked .check-icon {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* =========================================
+       ROW 1: MAHAID (Expanded)
+       ========================================= */
+    .row-expanded {
+      display: flex;
+      flex-direction: column;
+      gap: 12px; /* Spacing scale: 12px */
+    }
+
+    .row-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px; /* Spacing scale: 12px */
+    }
+
+    .row-main-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px; /* Spacing scale: 4px */
+    }
+
+    .title-badge-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px; /* Spacing scale: 8px */
+      flex-wrap: wrap;
+    }
+
+    /* Action group inside MahaID */
+    .mahaid-action-block {
+      display: flex;
+      flex-direction: column;
+      gap: 8px; /* Spacing scale: 8px */
+      width: 100%;
+    }
+
+    .prompt-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-title);
+    }
+
+    /* Outlined Button: border and text #0F766E, 14px/600, radius 12, 44px tall */
+    .btn-outlined {
+      height: 44px;
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--btn-border);
+      background-color: transparent;
+      color: var(--btn-text);
+      font-family: var(--font-family);
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-outlined:hover {
+      background-color: var(--btn-hover-bg);
+    }
+
+    .btn-outlined:active {
+      transform: scale(0.99);
+    }
+
+    .btn-icon {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    /* Helper text under button (12px) */
+    .btn-helper-text {
+      font-size: 12px;
+      line-height: 17px;
+      color: var(--text-helper);
+    }
+
+    /* =========================================
+       ROW 2 & ROW 3: COMPACT ROWS
+       ========================================= */
+    .row-compact {
+      display: flex;
+      align-items: center;
+      gap: 12px; /* Spacing scale: 12px */
+    }
+
+    .row-compact.align-start {
+      align-items: flex-start;
+    }
+
+    .hint-text {
+      font-size: 12px;
+      line-height: 16px;
+      color: var(--text-helper);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preview-container">
+    <!-- Toolbar for quick theme preview toggling -->
+    <div class="theme-toolbar" role="group" aria-label="Theme switcher">
+      <span>Theme:</span>
+      <button class="theme-btn active" id="btn-system" onclick="setTheme('system')">System</button>
+      <button class="theme-btn" id="btn-light" onclick="setTheme('light')">Light</button>
+      <button class="theme-btn" id="btn-dark" onclick="setTheme('dark')">Dark</button>
+    </div>
+
+    <!-- 375px Phone Frame -->
+    <div class="mobile-frame">
+      <article class="checklist-card" aria-label="Pre-application checklist">
+        
+        <!-- Header -->
+        <header class="card-header">
+          <h1 class="card-title">Keep these ready</h1>
+          <p class="card-subtitle" id="card-subtitle" aria-live="polite">3 things you'll need to apply</p>
+        </header>
+
+        <!-- Row 1: MahaID (Expanded, Main Row) -->
+        <section class="row-expanded" aria-labelledby="title-mahaid">
+          <div class="row-top">
+            <div class="icon-tile" aria-hidden="true">
+              <!-- Shield / ID Card icon (same stroke weight 2) -->
+              <svg class="icon-svg" viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+
+            <div class="row-main-content">
+              <div class="title-badge-wrap">
+                <span class="row-title" id="title-mahaid">MahaID</span>
+                <span class="badge badge-required">Required</span>
+              </div>
+              <p class="row-description">
+                You'll need your MahaID to continue your scholarship application.
+              </p>
+            </div>
+
+            <!-- Optional 24px check circle (44px tap area) -->
+            <button 
+              type="button" 
+              class="check-tap-area" 
+              onclick="toggleCheck(0)" 
+              aria-label="Mark MahaID as ready"
+              aria-checked="false" 
+              role="checkbox"
+            >
+              <div class="check-circle" id="check-0">
+                <svg class="check-icon" viewBox="0 0 24 24">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+            </button>
+          </div>
+
+          <!-- MahaID Action Block -->
+          <div class="mahaid-action-block">
+            <span class="prompt-text">Don't have one yet?</span>
+            
+            <a 
+              href="https://mahasarathi.maharashtra.gov.in/home/landing" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="btn-outlined"
+            >
+              <span>Create MahaID</span>
+              <!-- External Link Icon -->
+              <svg class="btn-icon" viewBox="0 0 24 24">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            </a>
+
+            <p class="btn-helper-text">
+              Opens the Mahasarathi portal. Your MahaID will be sent to your registered mobile number.
+            </p>
+          </div>
+        </section>
+
+        <!-- Divider -->
+        <hr class="divider" />
+
+        <!-- Row 2: Aadhaar Card (Compact, Single Line) -->
+        <section class="row-compact" aria-labelledby="title-aadhaar">
+          <div class="icon-tile" aria-hidden="true">
+            <!-- Credit / Aadhaar Card icon -->
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <rect width="20" height="14" x="2" y="5" rx="2"/>
+              <line x1="2" x2="22" y1="10" y2="10"/>
+            </svg>
+          </div>
+
+          <div class="row-main-content">
+            <div class="title-badge-wrap">
+              <span class="row-title" id="title-aadhaar">Aadhaar card</span>
+              <span class="badge badge-required">Required</span>
+            </div>
+          </div>
+
+          <!-- Optional 24px check circle (44px tap area) -->
+          <button 
+            type="button" 
+            class="check-tap-area" 
+            onclick="toggleCheck(1)" 
+            aria-label="Mark Aadhaar card as ready"
+            aria-checked="false" 
+            role="checkbox"
+          >
+            <div class="check-circle" id="check-1">
+              <svg class="check-icon" viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+          </button>
+        </section>
+
+        <!-- Divider -->
+        <hr class="divider" />
+
+        <!-- Row 3: Aadhaar-linked Mobile (Compact) -->
+        <section class="row-compact align-start" aria-labelledby="title-mobile">
+          <div class="icon-tile" aria-hidden="true">
+            <!-- Smartphone icon -->
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <rect width="14" height="20" x="5" y="2" rx="2" ry="2"/>
+              <path d="M12 18h.01"/>
+            </svg>
+          </div>
+
+          <div class="row-main-content">
+            <div class="title-badge-wrap">
+              <span class="row-title" id="title-mobile">Aadhaar-linked mobile</span>
+              <span class="badge badge-otp">For OTP</span>
+            </div>
+            <p class="hint-text">
+              You'll get an OTP on this number.
+            </p>
+          </div>
+
+          <!-- Optional 24px check circle (44px tap area) -->
+          <button 
+            type="button" 
+            class="check-tap-area" 
+            onclick="toggleCheck(2)" 
+            aria-label="Mark Aadhaar-linked mobile as ready"
+            aria-checked="false" 
+            role="checkbox"
+          >
+            <div class="check-circle" id="check-2">
+              <svg class="check-icon" viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+          </button>
+        </section>
+
+      </article>
+    </div>
+  </div>
+
+  <script>
+    // State management for checked items
+    const checkedStates = [false, false, false];
+
+    function toggleCheck(index) {
+      checkedStates[index] = !checkedStates[index];
+      
+      const checkCircle = document.getElementById(`check-${index}`);
+      const btn = checkCircle.closest('.check-tap-area');
+      
+      if (checkedStates[index]) {
+        checkCircle.classList.add('checked');
+        btn.setAttribute('aria-checked', 'true');
+      } else {
+        checkCircle.classList.remove('checked');
+        btn.setAttribute('aria-checked', 'false');
+      }
+
+      updateSubtitle();
+    }
+
+    function updateSubtitle() {
+      const readyCount = checkedStates.filter(Boolean).length;
+      const subtitleEl = document.getElementById('card-subtitle');
+      
+      if (readyCount === 0) {
+        subtitleEl.textContent = "3 things you'll need to apply";
+      } else {
+        subtitleEl.textContent = `${readyCount} of 3 ready`;
+      }
+    }
+
+    // Theme preview switcher
+    function setTheme(mode) {
+      document.getElementById('btn-system').classList.remove('active');
+      document.getElementById('btn-light').classList.remove('active');
+      document.getElementById('btn-dark').classList.remove('active');
+
+      if (mode === 'system') {
+        document.documentElement.removeAttribute('data-theme');
+        document.getElementById('btn-system').classList.add('active');
+      } else if (mode === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.getElementById('btn-light').classList.add('active');
+      } else if (mode === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('btn-dark').classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>
