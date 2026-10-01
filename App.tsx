@@ -379,40 +379,53 @@ const DocumentRow: React.FC<DocumentRowProps> = ({
   t
 }) => {
   return (
-    <div className="py-3 px-1 text-left first:pt-2 last:pb-2">
-      <div className="flex items-start justify-between gap-3">
+    <div className="bg-white border border-slate-200/90 rounded-[14px] p-3.5 sm:p-4 shadow-xs text-left transition-all">
+      <div className="flex items-start gap-3">
+        {/* Document Icon on the left */}
+        <div className="w-9 h-9 rounded-xl bg-slate-100/90 border border-slate-200/60 flex items-center justify-center shrink-0 mt-0.5 text-slate-600">
+          <FileText className="w-4 h-4 text-slate-600" />
+        </div>
+
+        {/* Content area: Name, SubName, Instruction, File name */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline flex-wrap gap-2">
-            <span className="text-[14px] sm:text-[15px] font-semibold text-slate-900 leading-snug">
+          <div className="flex items-start justify-between gap-2">
+            <h4 className="text-[14px] sm:text-[15px] font-bold text-slate-900 leading-snug break-words">
               {name}
-            </span>
-            {badge && <DocBadge type={badge} labelOverride={badgeLabel} t={t} />}
-            {fileName && (
-              <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                {fileName}
-              </span>
+            </h4>
+            {badge && (
+              <div className="shrink-0 pt-0.5">
+                <DocBadge type={badge} labelOverride={badgeLabel} t={t} />
+              </div>
             )}
           </div>
 
-          {/* SubName or instruction underneath */}
+          {/* SubName or instruction */}
           {subName && (
-            <p className="text-[12px] font-medium text-indigo-700 mt-0.5 leading-normal">
+            <p className="text-[12px] font-semibold text-indigo-700 mt-1 leading-normal break-words">
               {subName}
             </p>
           )}
 
           {instruction && (
-            <p className="text-[11px] text-slate-500 mt-0.5 leading-normal">
+            <p className="text-[11.5px] text-slate-500 mt-0.5 leading-relaxed break-words">
               {instruction}
             </p>
+          )}
+
+          {fileName && (
+            <div className="mt-1.5 flex items-center">
+              <span className="text-[10.5px] font-medium text-slate-500 bg-slate-50 border border-slate-200/70 px-2 py-0.5 rounded-md font-mono">
+                {fileName}
+              </span>
+            </div>
           )}
         </div>
       </div>
 
       {/* DSY Qualification Selector (if applicable) */}
       {isDsyQualifying && (
-        <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-col gap-1.5">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+        <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             {t.dsySelectQual}
           </span>
           <div className="grid grid-cols-2 gap-2">
@@ -1539,19 +1552,19 @@ const StepDocumentList: React.FC<{
           ==================================================================== */}
       <section className="space-y-6">
         {allSections.map((section, sIdx) => (
-          <div key={sIdx} className="space-y-2.5">
-            {/* Clean Section Title with Icon */}
-            <div className="flex items-center space-x-2 px-1">
-              <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center">
+          <div key={sIdx} className="space-y-2.5 sm:space-y-3">
+            {/* Clean Section Title with Icon outside document cards */}
+            <div className="flex items-center space-x-2 px-1 pt-1">
+              <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
                 {section.icon}
               </div>
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+              <h3 className="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-wider">
                 {section.title}
               </h3>
             </div>
 
-            {/* Document Rows in this section */}
-            <div className="space-y-2">
+            {/* Individual Document Cards in this section (10-12px gap) */}
+            <div className="space-y-2.5 sm:space-y-3">
               {section.docs.map((doc, dIdx) => {
                 const docId = `doc-${sIdx}-${dIdx}`;
                 return (
