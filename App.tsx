@@ -18,12 +18,12 @@ import {
   RotateCcw,
   Info,
   CheckCircle2,
-  Sparkles,
   Layers
 } from 'lucide-react';
 import { Stream, CourseType, Category, AppState, Language, DsyQualification } from './types';
 import { translations } from './translations';
 import { generateChecklistPdf } from './pdfGenerator';
+import { AdBanner } from './AdBanner';
 
 const PERSISTENCE_KEY = 'mahadbt_assist_state_v6';
 
@@ -31,7 +31,9 @@ type BadgeType = 'mandatory' | 'required_otp' | 'anyone' | 'dsy' | 'onepdf' | 'm
 
 interface DocItem {
   name: string;
+  englishName?: string;
   subName?: string;
+  englishSubName?: string;
   badge?: BadgeType;
   fileName?: string;
   instruction?: string;
@@ -151,13 +153,16 @@ const App: React.FC = () => {
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/70 pt-safe no-select">
         <div className="max-w-xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Logo & Product Brand */}
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center shadow-xs">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-            </div>
+          <div className="flex items-center space-x-2.5 sm:space-x-3">
+            <img
+              src="/logo.png"
+              alt="MahaScholar Logo"
+              className="w-9 h-9 sm:w-10 sm:h-10 object-contain shrink-0"
+              referrerPolicy="no-referrer"
+            />
             <div>
-              <span className="text-sm font-black tracking-tight text-slate-900 block leading-tight">MahaScholar</span>
-              <span className="text-[10px] font-semibold text-slate-400 block leading-none">Document Guide</span>
+              <span className="text-sm sm:text-base font-black tracking-tight text-slate-900 block leading-tight">MahaScholar</span>
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-400 block leading-none">Document Guide</span>
             </div>
           </div>
 
@@ -265,6 +270,13 @@ const App: React.FC = () => {
           )}
         </div>
       </main>
+
+      {/* Ad Placement: Bottom of suitable content screens (Steps 1-4) */}
+      {state.step < 5 && (
+        <div className="w-full max-w-xl mx-auto px-4 sm:px-6">
+          <AdBanner placement="screenBottom" />
+        </div>
+      )}
 
       {/* Footer for Steps 1-4 (Borderless, compact 12px text) */}
       {state.step < 5 && (
@@ -983,17 +995,26 @@ const StepDocumentList: React.FC<{
     const docs: DocItem[] = [];
     if (state.category === 'Open') return docs;
 
-    docs.push({ name: t.docCasteCert, badge: 'mandatory' });
+    docs.push({
+      name: t.docCasteCert,
+      englishName: translations.en.docCasteCert,
+      badge: 'mandatory'
+    });
 
     // Caste Validity Certificate is MANDATORY for SC, ST, OBC, VJNT, SBC, SEBC, Minority (NOT Open)
     docs.push({
       name: t.docCasteValidity,
+      englishName: translations.en.docCasteValidity,
       badge: 'mandatory'
     });
 
     // Non-Creamy Layer (NCL) is required ONLY for OBC, SEBC, VJNT, SBC (NOT Open, SC, ST, Minority)
     if (['OBC', 'SEBC', 'VJNT', 'SBC'].includes(state.category || '')) {
-      docs.push({ name: t.docNCL, badge: 'mandatory' });
+      docs.push({
+        name: t.docNCL,
+        englishName: translations.en.docNCL,
+        badge: 'mandatory'
+      });
     }
 
     return docs;
@@ -1001,24 +1022,37 @@ const StepDocumentList: React.FC<{
 
   // 2) Income Documents
   const incomeDocs = useMemo<DocItem[]>(() => {
-    return [{ name: t.docIncomeCert, badge: 'mandatory' }];
+    return [{
+      name: t.docIncomeCert,
+      englishName: translations.en.docIncomeCert,
+      badge: 'mandatory'
+    }];
   }, [t]);
 
   // 3) Domicile & Family (Ration Card for Open Category)
   const domicileDocs = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
-    docs.push({ name: t.docDomicileCert, badge: 'mandatory' });
+    docs.push({
+      name: t.docDomicileCert,
+      englishName: translations.en.docDomicileCert,
+      badge: 'mandatory'
+    });
 
     if (state.category === 'Open') {
       docs.push({
         name: t.docRationCard,
+        englishName: translations.en.docRationCard,
         badge: 'mandatory',
         instruction: t.rationCardInst
       });
     }
 
     if (state.category === 'Open' && state.isHosteller) {
-      docs.push({ name: t.docAlpabhudharak, badge: 'anyone' });
+      docs.push({
+        name: t.docAlpabhudharak,
+        englishName: translations.en.docAlpabhudharak,
+        badge: 'anyone'
+      });
     }
     return docs;
   }, [state.category, state.isHosteller, t]);
@@ -1026,7 +1060,11 @@ const StepDocumentList: React.FC<{
   // 4) Bank & Identity Details
   const bankDocs = useMemo<DocItem[]>(() => {
     return [
-      { name: t.docBankPassbook, badge: 'mandatory' }
+      {
+        name: t.docBankPassbook,
+        englishName: translations.en.docBankPassbook,
+        badge: 'mandatory'
+      }
     ];
   }, [t]);
 
@@ -1036,14 +1074,25 @@ const StepDocumentList: React.FC<{
 
     // Bonafide / Fees
     if (state.category === 'Open') {
-      docs.push({ name: t.docAdmissionBonafideFees, badge: 'merge' });
+      docs.push({
+        name: t.docAdmissionBonafideFees,
+        englishName: translations.en.docAdmissionBonafideFees,
+        badge: 'merge'
+      });
     } else {
-      docs.push({ name: t.docAdmissionBonafide, badge: 'mandatory' });
+      docs.push({
+        name: t.docAdmissionBonafide,
+        englishName: translations.en.docAdmissionBonafide,
+        badge: 'mandatory'
+      });
     }
 
     // Allotment Letter
     if (!isASC) {
-      docs.push({ name: t.docAllotment });
+      docs.push({
+        name: t.docAllotment,
+        englishName: translations.en.docAllotment
+      });
     }
 
     // DSY Qualifying Document (Inside Academic Section)
@@ -1051,7 +1100,9 @@ const StepDocumentList: React.FC<{
       if (state.courseType === CourseType.Poly_Diploma) {
         docs.push({
           name: t.dsyQualifyingDoc,
+          englishName: translations.en.dsyQualifyingDoc,
           subName: t.dsyPolyQualSub,
+          englishSubName: translations.en.dsyPolyQualSub,
           badge: 'anyone',
           instruction: t.dsyHelperText,
           isDsyQualifying: true,
@@ -1060,7 +1111,9 @@ const StepDocumentList: React.FC<{
       } else if (state.courseType === CourseType.BE_BTech) {
         docs.push({
           name: t.dsyQualifyingDoc,
+          englishName: translations.en.dsyQualifyingDoc,
           subName: t.dsyBeQualSub,
+          englishSubName: translations.en.dsyBeQualSub,
           badge: 'anyone',
           instruction: t.dsyHelperText,
           isDsyQualifying: true,
@@ -1069,6 +1122,7 @@ const StepDocumentList: React.FC<{
       } else if (state.courseType === CourseType.BPharm) {
         docs.push({
           name: t.docDiplomaFinalMarksheet,
+          englishName: translations.en.docDiplomaFinalMarksheet,
           badge: 'dsy',
           instruction: t.dsyHelperText
         });
@@ -1079,27 +1133,27 @@ const StepDocumentList: React.FC<{
     if (!isFresh) {
       if (isDPharm || state.courseType === CourseType.Poly_Diploma) {
         if (!state.isDirectSecondYear) {
-          if (state.currentYear === 2) docs.push({ name: t.marksheet1stYear, badge: 'onepdf' });
-          if (state.currentYear === 3) docs.push({ name: t.marksheet2ndYear, badge: 'onepdf' });
+          if (state.currentYear === 2) docs.push({ name: t.marksheet1stYear, englishName: translations.en.marksheet1stYear, badge: 'onepdf' });
+          if (state.currentYear === 3) docs.push({ name: t.marksheet2ndYear, englishName: translations.en.marksheet2ndYear, badge: 'onepdf' });
         } else {
-          if (state.currentYear === 3) docs.push({ name: t.marksheet2ndYear, badge: 'onepdf' });
+          if (state.currentYear === 3) docs.push({ name: t.marksheet2ndYear, englishName: translations.en.marksheet2ndYear, badge: 'onepdf' });
         }
       } else if (state.isDirectSecondYear) {
         if (state.currentYear! >= 3) {
-          docs.push({ name: t.marksheet2ndYearSem, badge: 'merge' });
+          docs.push({ name: t.marksheet2ndYearSem, englishName: translations.en.marksheet2ndYearSem, badge: 'merge' });
         }
         if (state.currentYear! >= 4) {
-          docs.push({ name: t.marksheet3rdYearSem, badge: 'merge' });
+          docs.push({ name: t.marksheet3rdYearSem, englishName: translations.en.marksheet3rdYearSem, badge: 'merge' });
         }
       } else {
         if (state.currentYear! >= 2) {
-          docs.push({ name: t.marksheet1stYearSem, badge: 'merge' });
+          docs.push({ name: t.marksheet1stYearSem, englishName: translations.en.marksheet1stYearSem, badge: 'merge' });
         }
         if (state.currentYear! >= 3) {
-          docs.push({ name: t.marksheet2ndYearSem, badge: 'merge' });
+          docs.push({ name: t.marksheet2ndYearSem, englishName: translations.en.marksheet2ndYearSem, badge: 'merge' });
         }
         if (state.currentYear! >= 4) {
-          docs.push({ name: t.marksheet3rdYearSem, badge: 'merge' });
+          docs.push({ name: t.marksheet3rdYearSem, englishName: translations.en.marksheet3rdYearSem, badge: 'merge' });
         }
       }
     }
@@ -1110,15 +1164,15 @@ const StepDocumentList: React.FC<{
   // 6) Previous Education Details
   const prevEduDocs = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
-    docs.push({ name: t.doc10thMarksheet, badge: 'mandatory' });
-    docs.push({ name: t.doc12thMarksheet, badge: 'mandatory' });
+    docs.push({ name: t.doc10thMarksheet, englishName: translations.en.doc10thMarksheet, badge: 'mandatory' });
+    docs.push({ name: t.doc12thMarksheet, englishName: translations.en.doc12thMarksheet, badge: 'mandatory' });
 
     if (isMaster) {
-      docs.push({ name: t.docGradMarksheet, badge: 'mandatory' });
+      docs.push({ name: t.docGradMarksheet, englishName: translations.en.docGradMarksheet, badge: 'mandatory' });
     }
 
     if (state.hadGap) {
-      docs.push({ name: t.docGapCert, badge: 'onepdf' });
+      docs.push({ name: t.docGapCert, englishName: translations.en.docGapCert, badge: 'onepdf' });
     }
 
     return docs;
@@ -1128,9 +1182,9 @@ const StepDocumentList: React.FC<{
   const leavingCertDocsList = useMemo<DocItem[]>(() => {
     const docs: DocItem[] = [];
     if (isMaster) {
-      if (isFresh) docs.push({ name: t.docGradTC, badge: 'mandatory' });
+      if (isFresh) docs.push({ name: t.docGradTC, englishName: translations.en.docGradTC, badge: 'mandatory' });
     } else if (isFresh) {
-      docs.push({ name: t.docLeavingCert, badge: 'mandatory' });
+      docs.push({ name: t.docLeavingCert, englishName: translations.en.docLeavingCert, badge: 'mandatory' });
     }
     return docs;
   }, [isFresh, isMaster, t]);
@@ -1139,21 +1193,26 @@ const StepDocumentList: React.FC<{
   const hostelDocsList = useMemo<DocItem[]>(() => {
     const isHostelEligibleCat = state.category && ['Open', 'SC', 'ST', 'SBC', 'VJNT'].includes(state.category);
     if (state.isHosteller && !isASC && isHostelEligibleCat) {
-      return [{ name: t.docHostelBond, badge: 'merge', fileName: 'Hostel_Bond_Tax_Receipt.pdf' }];
+      return [{
+        name: t.docHostelBond,
+        englishName: translations.en.docHostelBond,
+        badge: 'merge',
+        fileName: 'Hostel_Bond_Tax_Receipt.pdf'
+      }];
     }
     return [];
   }, [state.isHosteller, isASC, state.category, t]);
 
   // Unified sections for display
   const allSections = useMemo(() => {
-    const sections: { title: string; subtitle?: string; icon: React.ReactNode; docs: DocItem[] }[] = [
-      { title: t.idDocs, subtitle: 'Residence and family verification', icon: <Home className="w-4 h-4 text-indigo-600" />, docs: domicileDocs },
-      { title: t.categoryDocs, subtitle: 'Caste status and quota certificates', icon: <ShieldCheck className="w-4 h-4 text-rose-600" />, docs: casteDocs },
-      { title: t.incomeDocs, subtitle: 'Income proof and banking details', icon: <IndianRupee className="w-4 h-4 text-emerald-600" />, docs: [...incomeDocs, ...bankDocs] },
-      { title: t.academicDocs, subtitle: 'Admission proof and marksheets', icon: <GraduationCap className="w-4 h-4 text-blue-600" />, docs: currentCourseDocs },
-      { title: t.prevEduDocs, subtitle: 'Prior school & college records', icon: <History className="w-4 h-4 text-violet-600" />, docs: prevEduDocs },
-      { title: t.hostelDocsSection, subtitle: 'Hostel accommodation proof', icon: <Building2 className="w-4 h-4 text-amber-600" />, docs: hostelDocsList },
-      { title: t.leavingCertDocs, subtitle: 'Original transfer records', icon: <LogOut className="w-4 h-4 text-rose-600" />, docs: leavingCertDocsList }
+    const sections: { title: string; englishTitle: string; subtitle?: string; icon: React.ReactNode; docs: DocItem[] }[] = [
+      { title: t.idDocs, englishTitle: translations.en.idDocs, subtitle: 'Residence and family verification', icon: <Home className="w-4 h-4 text-indigo-600" />, docs: domicileDocs },
+      { title: t.categoryDocs, englishTitle: translations.en.categoryDocs, subtitle: 'Caste status and quota certificates', icon: <ShieldCheck className="w-4 h-4 text-rose-600" />, docs: casteDocs },
+      { title: t.incomeDocs, englishTitle: translations.en.incomeDocs, subtitle: 'Income proof and banking details', icon: <IndianRupee className="w-4 h-4 text-emerald-600" />, docs: [...incomeDocs, ...bankDocs] },
+      { title: t.academicDocs, englishTitle: translations.en.academicDocs, subtitle: 'Admission proof and marksheets', icon: <GraduationCap className="w-4 h-4 text-blue-600" />, docs: currentCourseDocs },
+      { title: t.prevEduDocs, englishTitle: translations.en.prevEduDocs, subtitle: 'Prior school & college records', icon: <History className="w-4 h-4 text-violet-600" />, docs: prevEduDocs },
+      { title: t.hostelDocsSection, englishTitle: translations.en.hostelDocsSection, subtitle: 'Hostel accommodation proof', icon: <Building2 className="w-4 h-4 text-amber-600" />, docs: hostelDocsList },
+      { title: t.leavingCertDocs, englishTitle: translations.en.leavingCertDocs, subtitle: 'Original transfer records', icon: <LogOut className="w-4 h-4 text-rose-600" />, docs: leavingCertDocsList }
     ];
 
     return sections.filter(s => s.docs && s.docs.length > 0);
@@ -1201,8 +1260,7 @@ const StepDocumentList: React.FC<{
       generateChecklistPdf({
         studentName: studentName.trim(),
         state,
-        sections: allSections,
-        t
+        sections: allSections
       });
       setShowDownloadModal(false);
       setDownloadSuccessToast(true);
@@ -1505,9 +1563,17 @@ const StepDocumentList: React.FC<{
                 );
               })}
             </div>
+
+            {/* Ad Placement: Between Document Sections */}
+            {sIdx === 1 && (
+              <AdBanner placement="betweenSections" className="pt-2 pb-1" />
+            )}
           </div>
         ))}
       </section>
+
+      {/* Ad Placement: Below the final document list */}
+      <AdBanner placement="belowFinalList" />
 
       {/* Global Submission Protocol Tip */}
       <div className="p-4 rounded-2xl bg-slate-100/70 border border-slate-200/60 text-left space-y-1.5">

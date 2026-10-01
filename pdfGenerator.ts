@@ -1,10 +1,11 @@
 import { jsPDF } from 'jspdf';
 import { AppState, CourseType } from './types';
-import { NOTO_SANS_DEVANAGARI_REGULAR_B64, NOTO_SANS_DEVANAGARI_BOLD_B64 } from './fontsBase64';
 
 export interface DocItem {
   name: string;
+  englishName?: string;
   subName?: string;
+  englishSubName?: string;
   badge?: string;
   fileName?: string;
   instruction?: string;
@@ -14,6 +15,7 @@ export interface DocItem {
 
 export interface SectionItem {
   title: string;
+  englishTitle?: string;
   subtitle?: string;
   docs: DocItem[];
 }
@@ -23,218 +25,337 @@ interface PillData {
   type: 'required' | 'create_one_pdf' | 'anyone' | 'otp' | 'default';
 }
 
+// ============================================================================
+// DEDICATED ENGLISH-ONLY PDF CONTENT SOURCE
+// The PDF generator exclusively references this dictionary.
+// ============================================================================
+export const pdfEnglishStrings = {
+  mainTitle: 'DOCUMENT CHECKLIST',
+  studentInfo: {
+    studentName: 'Student Name:',
+    course: 'Course:',
+    category: 'Category:',
+    admissionType: 'Admission Type:',
+    dsy: 'Direct Second Year (DSY)',
+    regular: 'Regular',
+    hostel: 'Hostel Accommodation:',
+    yes: 'Yes'
+  },
+  sections: {
+    keepReady: 'KEEP THESE READY',
+    identity: 'IDENTITY & RESIDENCY',
+    category: 'CATEGORY DOCUMENTS',
+    incomeBank: 'INCOME & BANKING DETAILS',
+    academic: 'ACADEMIC & ADMISSION PROOF',
+    prevEdu: 'PREVIOUS EDUCATION RECORDS',
+    leaving: 'TRANSFER / LEAVING CERTIFICATE',
+    hostel: 'HOSTEL ACCOMMODATION'
+  },
+  prerequisites: {
+    mahaId: 'MahaID',
+    aadhaarCard: 'Aadhaar Card',
+    aadhaarMobile: 'Aadhaar-linked Mobile'
+  },
+  badges: {
+    required: 'REQUIRED',
+    original: 'ORIGINAL',
+    xerox: 'XEROX',
+    anyOne: 'ANY ONE',
+    ifApplicable: 'IF APPLICABLE',
+    otp: 'OTP',
+    createOnePdf: 'CREATE ONE PDF'
+  }
+};
+
+// Canonical English Document Dictionary for any localized strings
+const CANONICAL_DOC_MAP: Record<string, string> = {
+  // Caste & Category
+  'caste certificate': 'Caste Certificate',
+  'जात प्रमाणपत्र': 'Caste Certificate',
+  'जाति प्रमाण पत्र': 'Caste Certificate',
+  'caste validity certificate': 'Caste Validity Certificate',
+  'जात वैधता प्रमाणपत्र': 'Caste Validity Certificate',
+  'जाति वैधता प्रमाण पत्र': 'Caste Validity Certificate',
+  'ncl certificate': 'Non-Creamy Layer Certificate (NCL)',
+  'non-creamy layer certificate (ncl)': 'Non-Creamy Layer Certificate (NCL)',
+  'non-creamy layer certificate': 'Non-Creamy Layer Certificate (NCL)',
+  'नॉन-क्रिमीलेअर प्रमाणपत्र (ncl)': 'Non-Creamy Layer Certificate (NCL)',
+  'नॉन-क्रीमी लेयर प्रमाण पत्र (ncl)': 'Non-Creamy Layer Certificate (NCL)',
+
+  // Income & Banking
+  'income certificate': 'Income Certificate',
+  'उत्पन्न प्रमाणपत्र': 'Income Certificate',
+  'आय प्रमाण पत्र': 'Income Certificate',
+  'bank passbook / bank details proof': 'Bank Passbook / Bank Details Proof',
+  'bank passbook / bank account proof': 'Bank Passbook / Bank Details Proof',
+  'बँक पासबुक / बँक खाते पुरावा': 'Bank Passbook / Bank Details Proof',
+  'बैंक पासबुक / बैंक विवरण प्रमाण': 'Bank Passbook / Bank Details Proof',
+
+  // Domicile & Ration
+  'domicile certificate': 'Domicile Certificate',
+  'निवासी प्रमाणपत्र (डोमिसाईल)': 'Domicile Certificate',
+  'निवासी प्रमाणपत्र': 'Domicile Certificate',
+  'अधिवास प्रमाण पत्र (डोमिसाइल)': 'Domicile Certificate',
+  'अधिवास प्रमाण पत्र': 'Domicile Certificate',
+  'ration card (front & back)': 'Ration Card (Front & Back)',
+  'रेशन कार्ड (पुढील व मागील पान)': 'Ration Card (Front & Back)',
+  'राशन कार्ड (आगे और पीछे का पृष्ठ)': 'Ration Card (Front & Back)',
+  'alpabhudharak certificate / job card': 'Alpabhudharak Certificate / Job Card',
+  'अल्पभूधारक प्रमाणपत्र किंवा जॉब कार्ड': 'Alpabhudharak Certificate / Job Card',
+  'अल्पभूधारक प्रमाण पत्र या जॉब कार्ड': 'Alpabhudharak Certificate / Job Card',
+
+  // Academic & Admission
+  'college allotment letter (cap)': 'College Allotment Letter (CAP)',
+  'college allotment letter': 'College Allotment Letter (CAP)',
+  'कॉलेज वाटप पत्र (allotment letter)': 'College Allotment Letter (CAP)',
+  'कॉलेज आवंटन पत्र (allotment letter)': 'College Allotment Letter (CAP)',
+  'bonafide certificate + fee receipt': 'Bonafide Certificate + Fee Receipt',
+  'bonafide certificate + fees paid receipt': 'Bonafide Certificate + Fee Receipt',
+  'बोनाफाईड प्रमाणपत्र + फी पावती': 'Bonafide Certificate + Fee Receipt',
+  'बोनाफाइड प्रमाण पत्र + शुल्क रसीद': 'Bonafide Certificate + Fee Receipt',
+  'bonafide certificate': 'Bonafide Certificate',
+  'बोनाफाईड प्रमाणपत्र': 'Bonafide Certificate',
+  'बोनाफाइड प्रमाण पत्र': 'Bonafide Certificate',
+
+  // Previous Education
+  '10th marksheet': '10th Marksheet',
+  '१० वी मार्कशीट': '10th Marksheet',
+  '१० वीं मार्कशीट': '10th Marksheet',
+  '12th marksheet': '12th Marksheet',
+  '१२ वी मार्कशीट': '12th Marksheet',
+  '१२ वीं मार्कशीट': '12th Marksheet',
+  'polytechnic / diploma marksheet': 'Polytechnic / Diploma Marksheet',
+  'diploma 2nd year marksheet': 'Diploma 2nd Year Marksheet',
+  'पॉलिटेक्निक / डिप्लोमा मार्कशीट': 'Polytechnic / Diploma Marksheet',
+  'diploma final year marksheet': 'Diploma Final Year Marksheet',
+  'डिप्लोमा अंतिम वर्ष मार्कशीट': 'Diploma Final Year Marksheet',
+  'gap certificate (affidavit)': 'Gap Certificate (Affidavit)',
+  'gap certificate': 'Gap Certificate (Affidavit)',
+  'गॅप प्रमाणपत्र (प्रतिज्ञापत्र)': 'Gap Certificate (Affidavit)',
+  'गैप प्रमाण पत्र (शपथ पत्र)': 'Gap Certificate (Affidavit)',
+  'graduation final year / final semester marksheet': 'Graduation Final Year / Semester Marksheet',
+  'पदवी अंतिम वर्ष / सेमिस्टर मार्कशीट': 'Graduation Final Year / Semester Marksheet',
+  'स्नातक अंतिम वर्ष / सेमेस्टर मार्कशीट': 'Graduation Final Year / Semester Marksheet',
+
+  // Leaving & Transfer
+  '12th / diploma leaving certificate (lc/tc)': 'Leaving Certificate (LC / TC)',
+  'leaving certificate (lc / tc)': 'Leaving Certificate (LC / TC)',
+  'leaving certificate': 'Leaving Certificate (LC / TC)',
+  'शाळा / कॉलेज सोडल्याचा दाखला (lc/tc)': 'Leaving Certificate (LC / TC)',
+  'शाळा / कॉलेज सोडल्याचा दाखला': 'Leaving Certificate (LC / TC)',
+  'विद्यालय / महाविद्यालय स्थानांतरण प्रमाण पत्र (tc / lc)': 'Leaving Certificate (LC / TC)',
+  'graduation tc / leaving certificate': 'Graduation Transfer Certificate (TC)',
+  'graduation transfer certificate (tc)': 'Graduation Transfer Certificate (TC)',
+  'पदवी ट्रान्सफर सर्टिफिकेट (tc)': 'Graduation Transfer Certificate (TC)',
+  'स्नातक स्थानांतरण प्रमाण पत्र (tc)': 'Graduation Transfer Certificate (TC)',
+
+  // Hostel
+  'hostel bond + owner’s tax receipt': 'Hostel Agreement Bond + Tax Receipt',
+  'hostel agreement bond + tax receipt': 'Hostel Agreement Bond + Tax Receipt',
+  'वसतिगृह करारपत्र + घरपट्टी पावती': 'Hostel Agreement Bond + Tax Receipt',
+  'छात्रावास अनुबंध पत्र + संपत्ति कर रसीद': 'Hostel Agreement Bond + Tax Receipt',
+
+  // Current Year Marksheets
+  '1st year marksheet (sem 1 + sem 2)': '1st Year Marksheet (Sem 1 + Sem 2)',
+  '2nd year marksheet (sem 3 + sem 4)': '2nd Year Marksheet (Sem 3 + Sem 4)',
+  '3rd year marksheet (sem 5 + sem 6)': '3rd Year Marksheet (Sem 5 + Sem 6)',
+  '4th year marksheet (sem 7 + sem 8)': '4th Year Marksheet (Sem 7 + Sem 8)',
+  '१ ले वर्ष मार्कशीट (सेम १ + सेम २)': '1st Year Marksheet (Sem 1 + Sem 2)',
+  '२ रे वर्ष मार्कशीट (सेम ३ + सेम ४)': '2nd Year Marksheet (Sem 3 + Sem 4)',
+  '३ रे वर्ष मार्कशीट (सेम ५ + सेम ६)': '3rd Year Marksheet (Sem 5 + Sem 6)',
+  '४ थे वर्ष मार्कशीट (सेम ७ + सेम ८)': '4th Year Marksheet (Sem 7 + Sem 8)',
+  'प्रथम वर्ष मार्कशीट (सेम १ + सेम २)': '1st Year Marksheet (Sem 1 + Sem 2)',
+  'द्वितीय वर्ष मार्कशीट (सेम ३ + सेम ४)': '2nd Year Marksheet (Sem 3 + Sem 4)',
+  'तृतीय वर्ष मार्कशीट (सेम ५ + सेम ६)': '3rd Year Marksheet (Sem 5 + Sem 6)',
+  'चतुर्थ वर्ष मार्कशीट (सेम ७ + सेम ८)': '4th Year Marksheet (Sem 7 + Sem 8)',
+  '1st year marksheet': '1st Year Marksheet',
+  '2nd year marksheet': '2nd Year Marksheet',
+  '१ ले वर्ष मार्कशीट': '1st Year Marksheet',
+  '२ रे वर्ष मार्कशीट': '2nd Year Marksheet',
+  'प्रथम वर्ष मार्कशीट': '1st Year Marksheet',
+  'द्वितीय वर्ष मार्कशीट': '2nd Year Marksheet',
+
+  // DSY Qualifying
+  'qualifying document for dsy': 'Qualifying Document for DSY',
+  'थेट द्वितीय वर्ष पात्रता कागदपत्र': 'Qualifying Document for DSY',
+  'डायरेक्ट सेकंड ईयर पात्रता दस्तावेज़': 'Qualifying Document for DSY'
+};
+
+function resolveEnglishDocName(rawName: string, englishName?: string): string {
+  if (englishName && englishName.trim()) {
+    return englishName.replace(/[\u0900-\u097F]/g, '').trim();
+  }
+  const clean = rawName.split('\n')[0].trim().toLowerCase();
+  for (const [k, v] of Object.entries(CANONICAL_DOC_MAP)) {
+    if (clean === k || clean.includes(k) || k.includes(clean)) {
+      return v;
+    }
+  }
+  // Strip any non-Latin Unicode characters
+  const stripped = rawName.split('\n')[0].replace(/[\u0900-\u097F]/g, '').trim();
+  return stripped || 'Required Document';
+}
+
+function resolveEnglishSectionTitle(rawTitle: string, englishTitle?: string): string {
+  if (englishTitle && englishTitle.trim()) {
+    return englishTitle.replace(/[\u0900-\u097F]/g, '').trim().toUpperCase();
+  }
+  const lower = rawTitle.toLowerCase().trim();
+  if (lower.includes('category') || lower.includes('जात') || lower.includes('प्रवर्ग') || lower.includes('श्रेणी')) {
+    return pdfEnglishStrings.sections.category;
+  }
+  if (lower.includes('residency') || lower.includes('identity') || lower.includes('रहिवासी') || lower.includes('निवासी') || lower.includes('निवास')) {
+    return pdfEnglishStrings.sections.identity;
+  }
+  if (lower.includes('income') || lower.includes('bank') || lower.includes('उत्पन्न') || lower.includes('बँक') || lower.includes('आय')) {
+    return pdfEnglishStrings.sections.incomeBank;
+  }
+  if (lower.includes('academic') || lower.includes('admission') || lower.includes('शैक्षणिक')) {
+    return pdfEnglishStrings.sections.academic;
+  }
+  if (lower.includes('previous') || lower.includes('prior') || lower.includes('मागील') || lower.includes('पिछली')) {
+    return pdfEnglishStrings.sections.prevEdu;
+  }
+  if (lower.includes('leaving') || lower.includes('transfer') || lower.includes('सोडल्याचा') || lower.includes('स्थानांतरण')) {
+    return pdfEnglishStrings.sections.leaving;
+  }
+  if (lower.includes('hostel') || lower.includes('वसतिगृह') || lower.includes('छात्रावास')) {
+    return pdfEnglishStrings.sections.hostel;
+  }
+  return rawTitle.replace(/[\u0900-\u097F]/g, '').trim().toUpperCase() || 'DOCUMENTS';
+}
+
 export function generateChecklistPdf(params: {
   studentName: string;
   state: AppState;
   sections: SectionItem[];
-  t: any;
 }): string {
-  const { studentName, state, sections, t } = params;
-  const lang = state.language || 'en';
+  const { studentName, state, sections } = params;
 
+  // Standard A4 dimensions in mm: 210mm x 297mm
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4'
   });
 
-  // 1. Embed Noto Sans Devanagari (Regular and Bold)
-  doc.addFileToVFS('NotoSansDevanagari-Regular.ttf', NOTO_SANS_DEVANAGARI_REGULAR_B64);
-  doc.addFont('NotoSansDevanagari-Regular.ttf', 'NotoSansDevanagari', 'normal');
-
-  doc.addFileToVFS('NotoSansDevanagari-Bold.ttf', NOTO_SANS_DEVANAGARI_BOLD_B64);
-  doc.addFont('NotoSansDevanagari-Bold.ttf', 'NotoSansDevanagari', 'bold');
-
-  doc.setFont('NotoSansDevanagari', 'normal');
-
   const pageWidth = 210;
   const pageHeight = 297;
   const marginX = 16;
-  const contentWidth = pageWidth - marginX * 2; // 178mm
-  const maxY = pageHeight - 16; // 281mm
-  let currentY = 16;
+  const contentWidth = pageWidth - marginX * 2; // 178 mm
+  const maxY = pageHeight - 15; // 282 mm
+  let currentY = 15;
 
   const checkPageBreak = (neededSpace: number) => {
     if (currentY + neededSpace > maxY) {
       doc.addPage();
-      currentY = 16;
+      currentY = 15;
       return true;
     }
     return false;
   };
 
-  // 2. Localization dictionary for clean PDF labels and headers
-  const i18n = {
-    en: {
-      docChecklist: 'DOCUMENT CHECKLIST',
-      studentName: 'Student Name:',
-      course: 'Course:',
-      category: 'Category:',
-      admissionType: 'Admission Type:',
-      dsyLabel: 'Direct Second Year (DSY)',
-      hostellerLabel: 'Hostel Accommodation:',
-      yes: 'Yes',
-      keepReady: 'KEEP READY',
-      mahaId: 'MahaID',
-      aadhaarCard: 'Aadhaar Card',
-      aadhaarMobile: 'Aadhaar-linked Mobile',
-      mahaIdHint: "Don't have MahaID? Create via mahasarathi.maharashtra.gov.in",
-      lblRequired: 'REQUIRED',
-      lblOriginal: 'ORIGINAL',
-      lblXerox: 'XEROX',
-      lblAnyOne: 'ANY ONE',
-      lblIfApp: 'IF APPLICABLE',
-      lblOtp: 'FOR OTP',
-      lblCreateOnePdf: 'CREATE ONE PDF',
-      subInstructions: 'SUBMISSION INSTRUCTIONS:',
-      subInstructionsBody:
-        '• Upload clear, original document scans in PDF format under 250 KB each. Keep original documents ready for college verification.'
-    },
-    mr: {
-      docChecklist: 'कागदपत्रे चेकलिस्ट',
-      studentName: 'विद्यार्थ्याचे नाव:',
-      course: 'अभ्यासक्रम:',
-      category: 'प्रवर्ग:',
-      admissionType: 'प्रवेश प्रकार:',
-      dsyLabel: 'थेट द्वितीय वर्ष (DSY)',
-      hostellerLabel: 'वसतिगृह:',
-      yes: 'होय',
-      keepReady: 'तयार ठेवा',
-      mahaId: 'MahaID',
-      aadhaarCard: 'आधार कार्ड',
-      aadhaarMobile: 'आधार-लिंक केलेला मोबाईल',
-      mahaIdHint: 'MahaID नाही? mahasarathi.maharashtra.gov.in वर तयार करा',
-      lblRequired: 'अनिवार्य',
-      lblOriginal: 'मूळ प्रत',
-      lblXerox: 'झेरॉक्स',
-      lblAnyOne: 'कोणतेही एक',
-      lblIfApp: 'लागू असल्यास',
-      lblOtp: 'OTP साठी',
-      lblCreateOnePdf: 'एक PDF तयार करा',
-      subInstructions: 'महत्त्वाच्या सूचना:',
-      subInstructionsBody:
-        '• सर्व कागदपत्रे मूळ प्रत (Original) स्कॅन करून स्पष्ट PDF मध्ये (कमाल २५० KB) तयार ठेवा. कॉलेज पडताळणीसाठी मूळ कागदपत्रे सोबत असणे आवश्यक आहे.'
-    },
-    hi: {
-      docChecklist: 'दस्तावेज़ चेकलिस्ट',
-      studentName: 'छात्र का नाम:',
-      course: 'पाठ्यक्रम:',
-      category: 'श्रेणी / वर्ग:',
-      admissionType: 'प्रवेश प्रकार:',
-      dsyLabel: 'डायरेक्ट सेकंड ईयर (DSY)',
-      hostellerLabel: 'छात्रावास:',
-      yes: 'हाँ',
-      keepReady: 'तैयार रखें',
-      mahaId: 'MahaID',
-      aadhaarCard: 'आधार कार्ड',
-      aadhaarMobile: 'आधार-लिंक मोबाइल',
-      mahaIdHint: 'MahaID नहीं है? mahasarathi.maharashtra.gov.in पर बनाएं',
-      lblRequired: 'अनिवार्य',
-      lblOriginal: 'मूल प्रति',
-      lblXerox: 'ज़ेरॉक्स',
-      lblAnyOne: 'कोई भी एक',
-      lblIfApp: 'यदि लागू हो',
-      lblOtp: 'OTP के लिए',
-      lblCreateOnePdf: 'एक PDF बनाएं',
-      subInstructions: 'महत्वपूर्ण निर्देश:',
-      subInstructionsBody:
-        '• सभी दस्तावेज़ मूल प्रति (Original) स्कैन करके स्पष्ट PDF (अधिकतम २५० KB) में रखें। कॉलेज सत्यापन के लिए मूल दस्तावेज़ साथ रखें।'
-    }
-  }[lang];
-
-  // 3. Header: Document Title
-  doc.setFont('NotoSansDevanagari', 'bold');
-  doc.setFontSize(14);
+  // 1. Title Header (Large, bold, 20pt)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
   doc.setTextColor(15, 23, 42); // slate-900
-  doc.text(i18n.docChecklist, marginX, currentY + 3);
-
+  doc.text(pdfEnglishStrings.mainTitle, marginX, currentY + 5.5);
   currentY += 8;
 
-  // 4. Student Details Card (Simple, Evergreen - NO dates, NO academic years, NO branding)
+  // Thin clean horizontal rule
+  doc.setDrawColor(203, 213, 225); // slate-300
+  doc.setLineWidth(0.3);
+  doc.line(marginX, currentY, marginX + contentWidth, currentY);
+  currentY += 3.5;
+
+  // 2. Student Details Box (Clean Two-Column Grid)
   const isDsy = state.isDirectSecondYear;
   const isHosteller = state.isHosteller;
-  const hasExtraRow = isDsy || isHosteller;
-  const cardHeight = hasExtraRow ? 15 : 11;
+  const infoHeight = isHosteller ? 19 : 14.5;
 
   doc.setFillColor(248, 250, 252); // slate-50
   doc.setDrawColor(226, 232, 240); // slate-200
   doc.setLineWidth(0.25);
-  doc.roundedRect(marginX, currentY, contentWidth, cardHeight, 1.5, 1.5, 'FD');
+  doc.roundedRect(marginX, currentY, contentWidth, infoHeight, 1.5, 1.5, 'FD');
 
-  doc.setFontSize(8);
+  const col1X = marginX + 3.5;
+  const col2X = marginX + 90;
 
-  // Row 1: Student Name & Course
-  doc.setFont('NotoSansDevanagari', 'bold');
-  doc.setTextColor(71, 85, 105); // slate-600
-  doc.text(i18n.studentName, marginX + 3.5, currentY + 4.5);
-  doc.setFont('NotoSansDevanagari', 'bold');
+  // Row 1
+  let rowY = currentY + 4.8;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139); // slate-500
+  doc.text(pdfEnglishStrings.studentInfo.studentName, col1X, rowY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(15, 23, 42); // slate-900
+  const cleanDisplayName = studentName.trim().replace(/[\u0900-\u097F]/g, '').trim() || 'Student';
+  doc.text(cleanDisplayName, col1X + 26, rowY);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(pdfEnglishStrings.studentInfo.course, col2X, rowY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
-  const displayName = studentName.trim() || 'Student';
-  doc.text(displayName, marginX + 28, currentY + 4.5);
+  const courseStr = state.courseType ? String(state.courseType).replace(/_/g, ' ') : (state.stream || 'Engineering');
+  doc.text(courseStr, col2X + 15, rowY);
 
-  doc.setFont('NotoSansDevanagari', 'bold');
-  doc.setTextColor(71, 85, 105);
-  doc.text(i18n.course, marginX + 88, currentY + 4.5);
-  doc.setFont('NotoSansDevanagari', 'normal');
+  // Row 2
+  rowY += 5.2;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(pdfEnglishStrings.studentInfo.category, col1X, rowY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
-  const courseStr = String(state.courseType || state.stream || 'N/A');
-  doc.text(courseStr, marginX + 104, currentY + 4.5);
+  doc.text(String(state.category || 'Open'), col1X + 26, rowY);
 
-  // Row 2: Category & Admission Type / Hosteller
-  doc.setFont('NotoSansDevanagari', 'bold');
-  doc.setTextColor(71, 85, 105);
-  doc.text(i18n.category, marginX + 3.5, currentY + 9);
-  doc.setFont('NotoSansDevanagari', 'bold');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(pdfEnglishStrings.studentInfo.admissionType, col2X, rowY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
-  doc.text(String(state.category || 'Open'), marginX + 28, currentY + 9);
+  doc.text(isDsy ? pdfEnglishStrings.studentInfo.dsy : pdfEnglishStrings.studentInfo.regular, col2X + 29, rowY);
 
-  if (isDsy) {
-    doc.setFont('NotoSansDevanagari', 'bold');
-    doc.setTextColor(71, 85, 105);
-    doc.text(i18n.admissionType, marginX + 88, currentY + 9);
-    doc.setFont('NotoSansDevanagari', 'normal');
+  if (isHosteller) {
+    rowY += 4.8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(pdfEnglishStrings.studentInfo.hostel, col1X, rowY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
     doc.setTextColor(15, 23, 42);
-    doc.text(i18n.dsyLabel, marginX + 116, currentY + 9);
-  } else if (isHosteller) {
-    doc.setFont('NotoSansDevanagari', 'bold');
-    doc.setTextColor(71, 85, 105);
-    doc.text(i18n.hostellerLabel, marginX + 88, currentY + 9);
-    doc.setFont('NotoSansDevanagari', 'normal');
-    doc.setTextColor(15, 23, 42);
-    doc.text(i18n.yes, marginX + 124, currentY + 9);
+    doc.text(pdfEnglishStrings.studentInfo.yes, col1X + 42, rowY);
   }
 
-  // Row 3 (if both DSY and Hosteller)
-  if (isDsy && isHosteller) {
-    doc.setFont('NotoSansDevanagari', 'bold');
-    doc.setTextColor(71, 85, 105);
-    doc.text(i18n.hostellerLabel, marginX + 3.5, currentY + 13.5);
-    doc.setFont('NotoSansDevanagari', 'normal');
-    doc.setTextColor(15, 23, 42);
-    doc.text(i18n.yes, marginX + 39, currentY + 13.5);
-  }
+  currentY += infoHeight + 3.5;
 
-  currentY += cardHeight + 4;
-
-  // 5. Pill Label Rendering Function (Clean, subtle, semantic)
-  const drawPill = (text: string, rightX: number, y: number, type: PillData['type']) => {
-    doc.setFont('NotoSansDevanagari', 'bold');
-    doc.setFontSize(6.5);
-    const textWidth = doc.getTextWidth(text);
-    const pillPadding = 2.2;
-    const pillW = textWidth + pillPadding * 2;
-    const pillH = 4.2;
+  // 3. Helper: Draw Semantic Badge Pill (Right to Left)
+  const drawBadge = (text: string, rightX: number, centerY: number, type: PillData['type']) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.2);
+    const textW = doc.getTextWidth(text);
+    const pillPad = 2.5;
+    const pillW = textW + pillPad * 2;
+    const pillH = 4.5;
     const pillX = rightX - pillW;
-    const pillY = y - 3.1;
+    const pillY = centerY - pillH / 2;
 
     if (type === 'required') {
       doc.setFillColor(254, 242, 242); // red-50
       doc.setDrawColor(254, 202, 202); // red-200
-      doc.setTextColor(185, 28, 28);   // red-700
+      doc.setTextColor(220, 38, 38);   // red-600
     } else if (type === 'create_one_pdf') {
       doc.setFillColor(240, 249, 255); // sky-50
       doc.setDrawColor(186, 230, 253); // sky-200
-      doc.setTextColor(3, 105, 161);   // sky-700
+      doc.setTextColor(2, 132, 199);   // sky-600
     } else if (type === 'anyone') {
       doc.setFillColor(238, 242, 255); // indigo-50
       doc.setDrawColor(199, 210, 254); // indigo-200
@@ -251,219 +372,172 @@ export function generateChecklistPdf(params: {
 
     doc.setLineWidth(0.2);
     doc.roundedRect(pillX, pillY, pillW, pillH, 1, 1, 'FD');
-    doc.text(text, pillX + pillPadding, y);
+    doc.text(text, pillX + pillPad, centerY + 1.2);
 
-    return pillW + 1.5; // return occupied width plus margin
+    return pillW + 1.8; // return occupied width plus spacing
   };
 
-  // 6. Document Row Rendering Function
-  const drawRow = (name: string, pills: PillData[] = [], subName?: string) => {
-    checkPageBreak(subName ? 10 : 6.5);
+  // 4. Helper: Draw Clean A4-Width Document Card
+  const drawDocCard = (name: string, badges: PillData[] = [], subtext?: string) => {
+    const cardH = subtext ? 13.5 : 9.8;
+    checkPageBreak(cardH + 1.8);
 
-    // Checkbox (Clean 3.5mm rounded box)
+    // Card background & subtle border
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(226, 232, 240); // slate-200
+    doc.setLineWidth(0.2);
+    doc.roundedRect(marginX, currentY, contentWidth, cardH, 1.2, 1.2, 'FD');
+
+    const centerY = currentY + (cardH / 2);
+
+    // Checkbox
+    const boxSize = 3.8;
+    const boxX = marginX + 3.2;
+    const boxY = centerY - boxSize / 2;
     doc.setDrawColor(148, 163, 184); // slate-400
     doc.setFillColor(255, 255, 255);
     doc.setLineWidth(0.25);
-    doc.roundedRect(marginX + 1, currentY - 2.8, 3.5, 3.5, 0.7, 0.7, 'FD');
+    doc.roundedRect(boxX, boxY, boxSize, boxSize, 0.7, 0.7, 'FD');
 
-    // Document Name (clean single line)
-    doc.setFont('NotoSansDevanagari', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(15, 23, 42); // slate-900
-    const cleanName = name.replace(/\n/g, ' ').trim();
-
-    // Ensure text does not collide with right pills
-    const estimatedPillWidth = pills.length * 28;
-    const maxNameWidth = contentWidth - estimatedPillWidth - 10;
-    const truncatedName = doc.splitTextToSize(cleanName, maxNameWidth)[0] || cleanName;
-    doc.text(truncatedName, marginX + 6.5, currentY);
-
-    // Render Pills from right to left
-    let rightOffset = marginX + contentWidth;
-    for (const pill of pills) {
-      const occupied = drawPill(pill.text, rightOffset, currentY, pill.type);
+    // Badges (drawn right to left)
+    let rightOffset = marginX + contentWidth - 3;
+    for (const b of badges) {
+      const occupied = drawBadge(b.text, rightOffset, centerY, b.type);
       rightOffset -= occupied;
     }
 
-    currentY += 4.2;
+    // Document Name (Plain English Text)
+    const textStartX = marginX + 10.5;
 
-    // SubName / Helper line (e.g. DSY options)
-    if (subName) {
-      doc.setFont('NotoSansDevanagari', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(79, 70, 229); // indigo-600
-      doc.text(subName, marginX + 6.5, currentY);
-      currentY += 3.8;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42); // slate-900
+
+    if (subtext) {
+      doc.text(name, textStartX, currentY + 5.2);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(67, 56, 202); // indigo-700
+      doc.text(subtext, textStartX, currentY + 10.5);
+    } else {
+      doc.text(name, textStartX, centerY + 1.3);
     }
 
-    // Subtle hairline divider between rows
-    doc.setDrawColor(241, 245, 249); // slate-100
-    doc.setLineWidth(0.15);
-    doc.line(marginX + 6.5, currentY - 0.8, marginX + contentWidth, currentY - 0.8);
-    currentY += 1.2;
+    currentY += cardH + 1.6;
   };
 
-  // 7. Section Header Rendering Function
+  // 5. Helper: Draw Section Header
   const drawSectionHeader = (title: string) => {
-    checkPageBreak(12);
-    currentY += 1.5;
-    doc.setFont('NotoSansDevanagari', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139); // slate-500
+    checkPageBreak(15);
+    currentY += 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11.5);
+    doc.setTextColor(30, 41, 59); // slate-800
     doc.text(title.toUpperCase(), marginX, currentY);
 
-    doc.setDrawColor(203, 213, 225); // slate-300
+    // Subtle underline rule
+    doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.2);
-    doc.line(marginX, currentY + 1.2, marginX + contentWidth, currentY + 1.2);
+    doc.line(marginX, currentY + 1.5, marginX + contentWidth, currentY + 1.5);
 
-    currentY += 4.5;
+    currentY += 3.5;
   };
 
-  // Deduplication tracker
-  const renderedDocNames = new Set<string>();
+  const renderedDocs = new Set<string>();
 
-  // 8. SECTION: KEEP READY (Compact, at top)
-  drawSectionHeader(i18n.keepReady);
+  // 6. Section: KEEP THESE READY (Prerequisites)
+  drawSectionHeader(pdfEnglishStrings.sections.keepReady);
 
-  drawRow(i18n.mahaId, [{ text: i18n.lblRequired, type: 'required' }], i18n.mahaIdHint);
-  renderedDocNames.add('mahaid');
-
-  drawRow(i18n.aadhaarCard, [
-    { text: i18n.lblRequired, type: 'required' },
-    { text: i18n.lblOriginal, type: 'default' }
+  drawDocCard(pdfEnglishStrings.prerequisites.mahaId, [
+    { text: pdfEnglishStrings.badges.required, type: 'required' }
   ]);
-  renderedDocNames.add('aadhaar card');
-  renderedDocNames.add('आधार कार्ड');
+  renderedDocs.add('mahaid');
 
-  drawRow(i18n.aadhaarMobile, [{ text: i18n.lblOtp, type: 'otp' }]);
-  renderedDocNames.add('aadhaar-linked mobile');
-  renderedDocNames.add('आधार-लिंक');
+  drawDocCard(pdfEnglishStrings.prerequisites.aadhaarCard, [
+    { text: pdfEnglishStrings.badges.required, type: 'required' },
+    { text: pdfEnglishStrings.badges.original, type: 'default' }
+  ]);
+  renderedDocs.add('aadhaar card');
 
-  // 9. Process Document Sections from Central Rule Engine
+  drawDocCard(pdfEnglishStrings.prerequisites.aadhaarMobile, [
+    { text: pdfEnglishStrings.badges.otp, type: 'otp' }
+  ]);
+  renderedDocs.add('aadhaar-linked mobile');
+
+  // 7. Render Final Resolved Documents from Central Rules Engine
   sections.forEach(section => {
     if (!section.docs || section.docs.length === 0) return;
 
-    // Filter out duplicates and already-rendered prerequisites
-    const validDocs = section.docs.filter(docItem => {
-      const normalized = docItem.name.toLowerCase().trim();
-      if (
-        normalized.includes('mahaid') ||
-        normalized.includes('aadhaar') ||
-        renderedDocNames.has(normalized)
-      ) {
+    const validDocs = section.docs.filter(d => {
+      const eng = resolveEnglishDocName(d.name, d.englishName).toLowerCase();
+      if (eng.includes('mahaid') || eng.includes('aadhaar') || renderedDocs.has(eng)) {
         return false;
       }
-      renderedDocNames.add(normalized);
+      renderedDocs.add(eng);
       return true;
     });
 
     if (validDocs.length === 0) return;
 
-    // Draw Section Header
-    drawSectionHeader(section.title);
+    const engSectionTitle = resolveEnglishSectionTitle(section.title, section.englishTitle);
+    drawSectionHeader(engSectionTitle);
 
-    validDocs.forEach(docItem => {
-      const pills: PillData[] = [];
-      let subName: string | undefined = undefined;
+    validDocs.forEach(d => {
+      const engDocName = resolveEnglishDocName(d.name, d.englishName);
+      const badges: PillData[] = [];
 
-      // Determine appropriate labels
-      if (docItem.badge === 'mandatory') {
-        pills.push({ text: i18n.lblRequired, type: 'required' });
-        // Marksheets and certificates require original scan for verification
-        const lower = docItem.name.toLowerCase();
+      // Determine clean English labels
+      if (d.badge === 'mandatory') {
+        badges.push({ text: pdfEnglishStrings.badges.required, type: 'required' });
+        const lower = engDocName.toLowerCase();
         if (
           lower.includes('cert') ||
-          lower.includes('प्रमाणपत्र') ||
           lower.includes('marksheet') ||
-          lower.includes('मार्कशीट') ||
           lower.includes('passbook') ||
-          lower.includes('पासबुक') ||
           lower.includes('tc') ||
-          lower.includes('lc') ||
-          lower.includes('दाखला')
+          lower.includes('lc')
         ) {
-          pills.push({ text: i18n.lblOriginal, type: 'default' });
+          badges.push({ text: pdfEnglishStrings.badges.original, type: 'default' });
         }
-      } else if (docItem.badge === 'merge' || docItem.badge === 'onepdf') {
-        pills.push({ text: i18n.lblCreateOnePdf, type: 'create_one_pdf' });
-      } else if (docItem.badge === 'anyone') {
-        pills.push({ text: i18n.lblAnyOne, type: 'anyone' });
-      } else if (docItem.badge === 'dsy') {
-        pills.push({ text: i18n.lblAnyOne, type: 'anyone' });
-      } else if (
-        docItem.name.toLowerCase().includes('gap') ||
-        docItem.name.toLowerCase().includes('गॅप')
-      ) {
-        pills.push({ text: i18n.lblIfApp, type: 'default' });
-      } else if (docItem.badge) {
-        pills.push({ text: docItem.badge.toUpperCase(), type: 'default' });
+      } else if (d.badge === 'merge' || d.badge === 'onepdf') {
+        badges.push({ text: pdfEnglishStrings.badges.createOnePdf, type: 'create_one_pdf' });
+      } else if (d.badge === 'anyone' || d.badge === 'dsy') {
+        badges.push({ text: pdfEnglishStrings.badges.anyOne, type: 'anyone' });
+      } else if (engDocName.toLowerCase().includes('gap')) {
+        badges.push({ text: pdfEnglishStrings.badges.ifApplicable, type: 'default' });
+      } else if (d.badge) {
+        badges.push({ text: pdfEnglishStrings.badges.required, type: 'required' });
       }
 
-      // Handle DSY Qualifying Document sub-options
-      if (docItem.isDsyQualifying) {
+      // Handle DSY Qualifying Document subtext in pure English
+      let subtext: string | undefined = undefined;
+      if (d.isDsyQualifying) {
         if (state.courseType === CourseType.Poly_Diploma) {
-          subName =
-            lang === 'mr'
-              ? '• ITI मार्कशीट किंवा १२ वी मार्कशीट (फक्त एक आवश्यक)'
-              : lang === 'hi'
-              ? '• ITI मार्कशीट या १२ वीं मार्कशीट (केवल एक आवश्यक)'
-              : '• ITI Marksheet OR 12th Marksheet (Only 1 required)';
+          subtext = '• ITI Marksheet OR 12th Marksheet (Only 1 required)';
         } else {
-          subName =
-            lang === 'mr'
-              ? '• पॉलिटेक्निक / डिप्लोमा किंवा समकक्ष पात्रता (फक्त एक आवश्यक)'
-              : lang === 'hi'
-              ? '• पॉलिटेक्निक / डिप्लोमा या समकक्ष योग्यता (केवल एक आवश्यक)'
-              : '• Polytechnic / Diploma Marksheet OR Equivalent Qualification (Only 1 required)';
+          subtext = '• Polytechnic / Diploma Marksheet OR Equivalent Qualification (Only 1 required)';
         }
-
         if (state.dsyQualification) {
-          const selectedText =
+          const qualName =
             state.dsyQualification === 'iti'
-              ? t.dsyItiMarksheet || 'ITI Marksheet'
+              ? 'ITI Marksheet'
               : state.dsyQualification === '12th'
-              ? t.dsy12thMarksheet || '12th Marksheet'
+              ? '12th Marksheet'
               : state.dsyQualification === 'diploma'
-              ? t.dsyDiplomaMarksheet || 'Polytechnic / Diploma Marksheet'
-              : t.dsyEquivalentDoc || 'Equivalent Qualification Document';
-          const selPrefix = lang === 'mr' ? 'निवडलेले:' : lang === 'hi' ? 'चयनित:' : 'Selected:';
-          subName = `• ${selPrefix} ${selectedText} (${i18n.lblAnyOne})`;
+              ? 'Polytechnic / Diploma Marksheet'
+              : 'Equivalent Qualification Document';
+          subtext = `• Selected: ${qualName} (${pdfEnglishStrings.badges.anyOne})`;
         }
-      } else if (docItem.subName && !docItem.subName.includes('[')) {
-        subName = `• ${docItem.subName}`;
+      } else if (d.englishSubName) {
+        subtext = `• ${d.englishSubName}`;
       }
 
-      drawRow(docItem.name, pills, subName);
+      drawDocCard(engDocName, badges, subtext);
     });
   });
 
-  // 10. Brief Footer Submission Protocol Note
-  checkPageBreak(10);
-  currentY += 2;
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.2);
-  doc.line(marginX, currentY, marginX + contentWidth, currentY);
-
-  currentY += 3.2;
-  doc.setFont('NotoSansDevanagari', 'bold');
-  doc.setFontSize(7);
-  doc.setTextColor(71, 85, 105);
-  const titleW = doc.getTextWidth(i18n.subInstructions);
-  doc.text(i18n.subInstructions, marginX, currentY);
-
-  doc.setFont('NotoSansDevanagari', 'normal');
-  doc.setFontSize(7);
-  doc.setTextColor(100, 116, 139);
-  const textX = marginX + titleW + 2.5;
-  const maxBodyW = contentWidth - (titleW + 2.5);
-  const wrappedLines = doc.splitTextToSize(i18n.subInstructionsBody, maxBodyW);
-  doc.text(wrappedLines, textX, currentY);
-
-  // 11. Sanitize file name: {StudentName}_Document_Checklist.pdf
-  const sanitized = studentName
-    .trim()
-    .replace(/[^a-zA-Z0-9_\u0900-\u097F\s-]/g, '')
-    .replace(/\s+/g, '_');
+  // 8. Sanitize file name: {StudentName}_Document_Checklist.pdf
+  const sanitized = cleanDisplayName.replace(/[^a-zA-Z0-9_\s-]/g, '').replace(/\s+/g, '_');
   const filename = `${sanitized || 'Student'}_Document_Checklist.pdf`;
 
   doc.save(filename);

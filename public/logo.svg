@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#FFFFFF"/>
+    </linearGradient>
+
+    <!-- Mortarboard Top Gradient -->
+    <linearGradient id="capTopGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#1E60E6"/>
+      <stop offset="40%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#1E3A8A"/>
+    </linearGradient>
+
+    <!-- Mortarboard Underside (Cap Body) Gradient -->
+    <linearGradient id="capBodyGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#122B68"/>
+      <stop offset="100%" stop-color="#0B1A42"/>
+    </linearGradient>
+
+    <!-- Tassel Gradient -->
+    <linearGradient id="tasselGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#0E2256"/>
+    </linearGradient>
+
+    <!-- Left Wing (Azure / Blue) Upper Facet -->
+    <linearGradient id="leftLeafTop" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="45%" stop-color="#0EA5E9"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+
+    <!-- Left Wing (Azure / Blue) Lower Facet -->
+    <linearGradient id="leftLeafBottom" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="35%" stop-color="#1E52D6"/>
+      <stop offset="100%" stop-color="#172554"/>
+    </linearGradient>
+
+    <!-- Right Wing (Emerald / Teal) Upper Facet -->
+    <linearGradient id="rightLeafTop" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="45%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#4ADE80"/>
+    </linearGradient>
+
+    <!-- Right Wing (Emerald / Teal) Lower Facet -->
+    <linearGradient id="rightLeafBottom" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="45%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#064E3B"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Clean White Squircle Base -->
+  <rect x="38" y="38" width="436" height="436" rx="96" ry="96" fill="url(#bgGrad)"/>
+
+  <!-- ======================================================== -->
+  <!-- 1. GRADUATION CAP (MORTARBOARD)                          -->
+  <!-- ======================================================== -->
+
+  <!-- 3D Skull Cap Underside Block -->
+  <path d="M 182 232 
+           L 182 266 
+           C 182 274, 218 308, 256 312 
+           C 294 308, 330 274, 330 266 
+           L 330 232 
+           L 256 258 
+           Z" 
+        fill="url(#capBodyGrad)"/>
+
+  <!-- Inner Shading for Skull Cap Block -->
+  <path d="M 182 266 
+           C 218 302, 256 310, 256 310 
+           C 256 310, 294 302, 330 266 
+           C 294 294, 256 304, 256 304 
+           C 256 304, 218 294, 182 266 Z" 
+        fill="#081432" opacity="0.6"/>
+
+  <!-- Diamond Top Plate -->
+  <polygon points="256,136 380,192 256,258 132,192" 
+           fill="url(#capTopGrad)"/>
+
+  <!-- Top Plate Subtle Border / Light Edge -->
+  <polyline points="132,192 256,136 380,192" 
+            fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+
+  <!-- Diamond Lower Edge Crisp Highlight -->
+  <polyline points="132,192 256,258 380,192" 
+            fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+
+  <!-- Center Pivot Button -->
+  <circle cx="256" cy="197" r="4.5" fill="#172554"/>
+
+  <!-- Tassel Cord & Hanging Bell -->
+  <path d="M 256 197 
+           C 298 197, 346 205, 368 214 
+           L 368 226" 
+        fill="none" stroke="url(#tasselGrad)" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Tassel Ring / Accent Bead -->
+  <ellipse cx="368" cy="226" rx="3.5" ry="2.5" fill="#0B1A42"/>
+
+  <!-- Tassel Body -->
+  <path d="M 364.5 227 
+           C 363.5 233, 361 248, 362 256 
+           C 363 263, 373 263, 374 256 
+           C 375 248, 372.5 233, 371.5 227 
+           Z" 
+        fill="url(#tasselGrad)"/>
+  <circle cx="368" cy="258" r="4.5" fill="#081432"/>
+
+  <!-- ======================================================== -->
+  <!-- 2. STYLIZED LEAF WINGS / BOOK MOTIF                      -->
+  <!-- ======================================================== -->
+
+  <!-- LEFT LEAF (Blue) -->
+  <!-- Upper Azure Facet -->
+  <path d="M 251 394 
+           C 249 344, 237 322, 225 316 
+           C 198 304, 146 288, 100 268 
+           C 114 316, 148 348, 251 394 Z" 
+        fill="url(#leftLeafTop)"/>
+
+  <!-- Lower Deep Cobalt Facet -->
+  <path d="M 100 268 
+           C 112 324, 144 360, 251 394 
+           C 186 376, 134 336, 100 268 Z" 
+        fill="url(#leftLeafBottom)"/>
+
+  <!-- Subtle Surface Tone Fusion -->
+  <path d="M 251 394 
+           C 249 336, 234 318, 222 316 
+           C 188 308, 144 290, 100 268 
+           C 114 326, 146 362, 251 394 Z" 
+        fill="url(#leftLeafBottom)" opacity="0.32"/>
+
+
+  <!-- RIGHT LEAF (Emerald & Teal Green) -->
+  <!-- Upper Mint / Spring Green Facet -->
+  <path d="M 261 394 
+           C 263 344, 275 322, 287 316 
+           C 314 304, 366 288, 412 268 
+           C 398 316, 364 348, 261 394 Z" 
+        fill="url(#rightLeafTop)"/>
+
+  <!-- Lower Deep Emerald / Teal Facet -->
+  <path d="M 412 268 
+           C 400 324, 368 360, 261 394 
+           C 326 376, 378 336, 412 268 Z" 
+        fill="url(#rightLeafBottom)"/>
+
+  <!-- Subtle Surface Tone Fusion -->
+  <path d="M 261 394 
+           C 263 336, 278 318, 290 316 
+           C 324 308, 368 290, 412 268 
+           C 398 326, 366 362, 261 394 Z" 
+        fill="url(#rightLeafBottom)" opacity="0.32"/>
+
+  <!-- Center Stem Groove (Negative Space) -->
+  <path d="M 256 313 
+           C 255.5 330, 255 365, 256 394 
+           C 257 365, 256.5 330, 256 313 Z" 
+        fill="#FFFFFF"/>
+
+</svg>
