@@ -70,7 +70,7 @@ const App: React.FC = () => {
       courseType: null,
       category: null,
       currentYear: null,
-      isHosteller: false,
+      isHosteller: null,
       hadGap: false,
       isDirectSecondYear: false,
       dsyQualification: null,
@@ -115,7 +115,7 @@ const App: React.FC = () => {
   };
 
   const handleCategorySelect = (cat: Category) => {
-    setState(prev => ({ ...prev, category: cat, isHosteller: false, step: 4 }));
+    setState(prev => ({ ...prev, category: cat, step: 4 }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -137,7 +137,7 @@ const App: React.FC = () => {
       courseType: null,
       category: null,
       currentYear: null,
-      isHosteller: false,
+      isHosteller: null,
       hadGap: false,
       isDirectSecondYear: false,
       dsyQualification: null,
@@ -273,9 +273,7 @@ const App: React.FC = () => {
 
       {/* Ad Placement: Bottom of suitable content screens (Steps 1-4) */}
       {state.step < 5 && (
-        <div className="w-full max-w-xl mx-auto px-4 sm:px-6">
-          <AdBanner placement="screenBottom" />
-        </div>
+        <AdBanner placement="screenBottom" className="max-w-xl mx-auto px-4 sm:px-6" />
       )}
 
       {/* Footer for Steps 1-4 (Borderless, compact 12px text) */}
@@ -746,9 +744,6 @@ const StepYear: React.FC<{
         (state.courseType === CourseType.BE_BTech || state.courseType === CourseType.Poly_Diploma))) &&
     state.currentYear === 2;
 
-  const isHostelEligibleCategory =
-    state.category && ['Open', 'SC', 'ST', 'SBC', 'VJNT'].includes(state.category);
-  const isHostelEligible = state.stream !== Stream.ASC && isHostelEligibleCategory;
   const isMaster = [
     CourseType.MPharm,
     CourseType.MBA,
@@ -914,37 +909,50 @@ const StepYear: React.FC<{
         </div>
       )}
 
-      {/* Hostel Question */}
-      {isHostelEligible && (
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
+      {/* Hosteller / Day Scholar Question - Mandatory across all courses and admission streams */}
+      <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
           <p className="text-xs sm:text-sm font-bold text-slate-800">
             {t.hostelQuestion}
           </p>
-          <div className="grid grid-cols-2 gap-2">
-            {[true, false].map(v => (
-              <button
-                key={v ? 'hostel-yes' : 'hostel-no'}
-                type="button"
-                onClick={() => onUpdate({ isHosteller: v })}
-                className={`py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all min-h-[44px] ${
-                  state.isHosteller === v
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                {v ? t.yes : t.no}
-              </button>
-            ))}
-          </div>
+          {state.isHosteller === null && (
+            <span className="text-[11px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-md">
+              Required
+            </span>
+          )}
         </div>
-      )}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onUpdate({ isHosteller: true })}
+            className={`py-3 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all min-h-[48px] flex items-center justify-center space-x-1.5 active:scale-[0.98] cursor-pointer touch-manipulation ${
+              state.isHosteller === true
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <span>{t.hostellerOption || 'Hosteller'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onUpdate({ isHosteller: false })}
+            className={`py-3 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all min-h-[48px] flex items-center justify-center space-x-1.5 active:scale-[0.98] cursor-pointer touch-manipulation ${
+              state.isHosteller === false
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <span>{t.dayScholarOption || 'Day Scholar'}</span>
+          </button>
+        </div>
+      </div>
 
-      {/* Continue Action */}
+      {/* Continue Action - Mandatory Year AND Hosteller/Day Scholar Selection */}
       <button
         type="button"
-        disabled={!state.currentYear}
+        disabled={!state.currentYear || state.isHosteller === null}
         onClick={onContinue}
-        className="w-full bg-slate-900 hover:bg-slate-950 text-white font-black text-sm uppercase tracking-wider py-4 rounded-2xl shadow-sm transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none min-h-[52px] active:scale-[0.99] touch-manipulation mt-4"
+        className="w-full bg-slate-900 hover:bg-slate-950 text-white font-black text-sm uppercase tracking-wider py-4 rounded-2xl shadow-sm transition-all duration-200 disabled:opacity-40 disabled:pointer-events-none min-h-[52px] active:scale-[0.99] touch-manipulation mt-4 cursor-pointer"
       >
         {t.continue}
       </button>
@@ -1192,7 +1200,7 @@ const StepDocumentList: React.FC<{
   // 8) Hostel Details
   const hostelDocsList = useMemo<DocItem[]>(() => {
     const isHostelEligibleCat = state.category && ['Open', 'SC', 'ST', 'SBC', 'VJNT'].includes(state.category);
-    if (state.isHosteller && !isASC && isHostelEligibleCat) {
+    if (state.isHosteller && isHostelEligibleCat) {
       return [{
         name: t.docHostelBond,
         englishName: translations.en.docHostelBond,
@@ -1201,7 +1209,7 @@ const StepDocumentList: React.FC<{
       }];
     }
     return [];
-  }, [state.isHosteller, isASC, state.category, t]);
+  }, [state.isHosteller, state.category, t]);
 
   // Unified sections for display
   const allSections = useMemo(() => {
@@ -1276,7 +1284,7 @@ const StepDocumentList: React.FC<{
     const mode = isFresh ? t.freshApp : t.renewalApp;
     const yearSuffix =
       state.currentYear === 1 ? t.st : state.currentYear === 2 ? t.nd : state.currentYear === 3 ? t.rd : t.th;
-    const hostelStatus = state.isHosteller ? t.yes : t.no;
+    const hostelStatus = state.isHosteller ? (t.hostellerOption || 'Hosteller') : (t.dayScholarOption || 'Day Scholar');
 
     let message = `*${t.waChecklistHeader}*\n\n`;
     message += `🎓 *Course:* ${state.courseType || state.stream}\n`;

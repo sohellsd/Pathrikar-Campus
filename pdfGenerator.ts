@@ -270,7 +270,7 @@ export function generateChecklistPdf(params: {
 
   // 2. Student Details Box (Clean Two-Column Grid)
   const isDsy = state.isDirectSecondYear;
-  const isHosteller = state.isHosteller;
+  const isHosteller = Boolean(state.isHosteller);
   const infoHeight = isHosteller ? 19 : 14.5;
 
   doc.setFillColor(248, 250, 252); // slate-50

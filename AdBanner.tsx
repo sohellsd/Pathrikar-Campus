@@ -11,14 +11,16 @@ interface AdBannerProps {
 /**
  * Conditional Google AdSense Component
  *
- * RULE:
+ * STRICT RULE:
  * - AD AVAILABLE → SHOW AD
- * - NO AD AVAILABLE → SHOW NOTHING (0px height, 0px margin, 0px padding)
+ * - NO AD AVAILABLE → SHOW NOTHING
  *
- * Detects real AdSense rendering via:
- * 1. data-ad-status="filled" vs data-ad-status="unfilled"
- * 2. Presence of active rendered iframe with offsetHeight > 0
- * 3. Graceful timeout dismissal for blocked or failed ad calls
+ * Zero Height / Margin / Padding Reservation:
+ * 1. While pending: Container has strict 0px height, 0px margin, 0px padding, 0px border,
+ *    and opacity: 0. Surrounding content touches and occupies full natural space from millisecond 0.
+ * 2. If ad is filled: Transitions smoothly to visible with standard spacing (opacity-100 my-3.5).
+ * 3. If ad is unfilled, rejected, or blocked: Completely unmounts (returns null).
+ * 4. Zero placeholders, zero loading skeletons, zero blank boxes.
  */
 export const AdBanner: React.FC<AdBannerProps> = ({
   slotId,
@@ -26,146 +28,134 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   format = 'auto',
   className = ''
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const insRef = useRef<HTMLModElement>(null);
-  const [adState, setAdState] = useState<'pending' | 'filled' | 'unfilled'>('pending');
-  const [isIntersecting, setIsIntersecting] = useState(false);
+  const [isFilled, setIsFilled] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
   const hasRequestedRef = useRef(false);
 
   const effectiveSlotId = slotId || (placement ? ADSENSE_CONFIG.slots[placement] : undefined);
 
-  // 1. Lazy-load ad container when approaching viewport
   useEffect(() => {
-    if (!containerRef.current) return;
+    const el = insRef.current;
+    if (!el || isDismissed) return;
 
-    if (typeof IntersectionObserver === 'undefined') {
-      setIsIntersecting(true);
-      return;
-    }
+    // Checks real AdSense rendering signals
+    const checkRenderStatus = (): boolean => {
+      if (!el) return false;
 
-    const observer = new IntersectionObserver(
-      entries => {
-        const [entry] = entries;
-        if (entry.isIntersecting) {
-          setIsIntersecting(true);
-          observer.disconnect();
-        }
-      },
-      {
-        rootMargin: '200px'
-      }
-    );
+      const adStatus = el.getAttribute('data-ad-status');
+      const adsbygoogleStatus = el.getAttribute('data-adsbygoogle-status');
 
-    observer.observe(containerRef.current);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  // 2. Request and observe AdSense ad lifecycle
-  useEffect(() => {
-    if (!isIntersecting || hasRequestedRef.current || adState === 'unfilled') return;
-
-    const insElement = insRef.current;
-    if (!insElement) return;
-
-    const checkAdStatus = () => {
-      if (!insElement) return false;
-
-      const status = insElement.getAttribute('data-ad-status');
-      if (status === 'filled') {
-        setAdState('filled');
-        return true;
-      }
-      if (status === 'unfilled') {
-        setAdState('unfilled');
+      // 1. Explicitly filled by Google AdSense
+      if (adStatus === 'filled') {
+        setIsFilled(true);
         return true;
       }
 
-      // Check if AdSense injected an iframe with non-zero dimensions
-      const iframe = insElement.querySelector('iframe');
-      if (iframe && (insElement.offsetHeight > 10 || iframe.offsetHeight > 10)) {
-        setAdState('filled');
+      // 2. Explicitly unfilled or hidden by Google AdSense
+      if (adStatus === 'unfilled' || el.style.display === 'none') {
+        setIsDismissed(true);
+        return false;
+      }
+
+      // 3. Rendered iframe check with actual visible height
+      const iframe = el.querySelector('iframe');
+      if (iframe && (iframe.offsetHeight > 10 || el.offsetHeight > 10)) {
+        setIsFilled(true);
         return true;
+      }
+
+      // 4. If AdSense processed the tag ("done") without filling or injecting an iframe
+      if (adsbygoogleStatus === 'done' && adStatus !== 'filled' && !iframe) {
+        setIsDismissed(true);
+        return false;
       }
 
       return false;
     };
 
-    // Set up MutationObserver to watch for AdSense DOM updates and attribute changes
-    let observer: MutationObserver | null = null;
+    // Reactively watch for AdSense DOM and attribute changes
+    let mutationObserver: MutationObserver | null = null;
     if (typeof MutationObserver !== 'undefined') {
-      observer = new MutationObserver(() => {
-        checkAdStatus();
+      mutationObserver = new MutationObserver(() => {
+        checkRenderStatus();
       });
 
-      observer.observe(insElement, {
+      mutationObserver.observe(el, {
         attributes: true,
-        attributeFilter: ['data-ad-status', 'class', 'style'],
+        attributeFilter: ['data-ad-status', 'data-adsbygoogle-status', 'style', 'class'],
         childList: true,
         subtree: true
       });
     }
 
-    // Safety timeout: if after 3.5s no ad is filled (ad-blocker, no inventory, or error),
-    // mark as unfilled so container is completely dismissed
-    const timeoutId = setTimeout(() => {
-      const isFilled = checkAdStatus();
-      if (!isFilled) {
-        setAdState('unfilled');
-      }
-    }, 3500);
+    // Reactively watch for actual dimension changes
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        if (el.offsetHeight > 10) {
+          setIsFilled(true);
+        }
+      });
+      resizeObserver.observe(el);
+    }
 
-    // Initial check in case it resolved synchronously
-    if (!checkAdStatus()) {
+    // Safety timeout: If no ad is filled within 2.5s (ad-blocker, no inventory, or error),
+    // cleanly dismiss the component so it is removed from the DOM.
+    const safetyTimer = setTimeout(() => {
+      const filled = checkRenderStatus();
+      if (!filled) {
+        setIsDismissed(true);
+      }
+    }, 2500);
+
+    // Initial request to Google AdSense
+    if (!hasRequestedRef.current) {
+      hasRequestedRef.current = true;
       try {
         if (typeof window !== 'undefined') {
           const win = window as unknown as { adsbygoogle?: Array<Record<string, unknown>> };
           win.adsbygoogle = win.adsbygoogle || [];
           win.adsbygoogle.push({});
-          hasRequestedRef.current = true;
         }
       } catch (err) {
-        // In case adsbygoogle throws, mark as unfilled immediately
-        setAdState('unfilled');
+        setIsDismissed(true);
       }
     } else {
-      hasRequestedRef.current = true;
+      checkRenderStatus();
     }
 
     return () => {
-      if (observer) observer.disconnect();
-      clearTimeout(timeoutId);
+      if (mutationObserver) mutationObserver.disconnect();
+      if (resizeObserver) resizeObserver.disconnect();
+      clearTimeout(safetyTimer);
     };
-  }, [isIntersecting, adState]);
+  }, [isDismissed]);
 
-  // If confirmed unfilled or blocked, remove completely from DOM (0 space, 0 margins)
-  if (adState === 'unfilled') {
+  // If confirmed empty, unfilled, or blocked: render absolutely nothing (0px space, 0px margins)
+  if (isDismissed) {
     return null;
   }
 
-  // When filled: display with natural responsive margins
-  // When pending: keep width 100% (so AdSense can measure parent width) but ZERO height, ZERO margin, ZERO padding
-  const isFilled = adState === 'filled';
-
+  // When filled: natural responsive container with balanced spacing
+  // While pending: strictly 0px height, 0px margin, 0px padding, 0px border, invisible to user
   return (
     <div
-      ref={containerRef}
-      className={`w-full max-w-full overflow-hidden text-center transition-opacity duration-300 ${
+      className={
         isFilled
-          ? `my-3 sm:my-4 opacity-100 ${className}`
-          : 'h-0 min-h-0 m-0 p-0 border-0 opacity-0 pointer-events-none'
-      }`}
+          ? `w-full max-w-full overflow-hidden text-center my-3.5 transition-all duration-300 opacity-100 ${className}`
+          : 'w-full max-w-full h-0 min-h-0 max-h-0 m-0 p-0 border-0 overflow-hidden opacity-0 pointer-events-none'
+      }
       aria-hidden={!isFilled}
     >
       <ins
         ref={insRef}
         className="adsbygoogle"
         style={{
-          display: 'block',
+          display: isFilled ? 'block' : 'inline-block',
+          width: '100%',
           margin: '0 auto',
-          minWidth: isFilled ? '250px' : undefined
+          ...(isFilled ? {} : { height: '0px', overflow: 'hidden' })
         }}
         data-ad-client={ADSENSE_CONFIG.publisherId}
         {...(effectiveSlotId ? { 'data-ad-slot': effectiveSlotId } : {})}

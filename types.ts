@@ -40,7 +40,7 @@ export interface AppState {
   courseType: CourseType | null;
   category: Category | null;
   currentYear: number | null;
-  isHosteller: boolean;
+  isHosteller: boolean | null;
   hadGap: boolean;
   isDirectSecondYear: boolean;
   dsyQualification?: DsyQualification | null;
